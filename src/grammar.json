@@ -59,7 +59,7 @@
                   "type": "ALIAS",
                   "content": {
                     "type": "SYMBOL",
-                    "name": "_session_title"
+                    "name": "_title_subject_content"
                   },
                   "named": true,
                   "value": "line_content"
@@ -118,6 +118,10 @@
         ]
       }
     },
+    "_title_subject_content": {
+      "type": "SYMBOL",
+      "name": "subject_content"
+    },
     "_block": {
       "type": "CHOICE",
       "members": [
@@ -165,7 +169,7 @@
     },
     "session": {
       "type": "PREC_DYNAMIC",
-      "value": 1,
+      "value": 4,
       "content": {
         "type": "SEQ",
         "members": [
@@ -1581,6 +1585,18 @@
       "_list_start_item"
     ],
     [
+      "document_title",
+      "verbatim_block",
+      "line_content",
+      "_session_title"
+    ],
+    [
+      "_title_subject_content",
+      "_session_title",
+      "verbatim_block",
+      "line_content"
+    ],
+    [
       "verbatim_block",
       "line_content",
       "_session_title"
@@ -1600,6 +1616,10 @@
     ],
     [
       "verbatim_group_item"
+    ],
+    [
+      "verbatim_group_item",
+      "_session_title"
     ]
   ],
   "precedences": [],
