@@ -266,23 +266,32 @@ static bool try_list_marker(TSLexer *lexer) {
 
     if (starts_digit) {
         while (is_digit(lexer->lookahead)) lexer->advance(lexer, false);
-        // Extended form: 1.2.3
+        // Extended form: 1.a, 1.a.1, 2.1.3, etc.
+        // Each segment after the first is dot + digits/letters/roman.
+        // The trailing dot is optional: "1.a " and "1.a. " are both valid.
+        bool is_extended = false;
         while (lexer->lookahead == '.') {
             lexer->advance(lexer, false);
             if (!is_digit(lexer->lookahead) && !is_lower(lexer->lookahead) &&
                 !is_roman_upper(lexer->lookahead)) {
-                // Period followed by space = "1. " style
+                // Period followed by space = "1. " or "1.a. " style
                 if (lexer->lookahead == ' ') {
                     lexer->advance(lexer, false);
                     return true;
                 }
                 return false;
             }
+            is_extended = true;
             while (is_digit(lexer->lookahead) ||
                    is_lower(lexer->lookahead) ||
                    is_roman_upper(lexer->lookahead)) {
                 lexer->advance(lexer, false);
             }
+        }
+        // Extended form without trailing dot: "1.a " or "1.a.1 "
+        if (is_extended && lexer->lookahead == ' ') {
+            lexer->advance(lexer, false);
+            return true;
         }
     } else if (starts_lower) {
         // Single lowercase letter — already consumed

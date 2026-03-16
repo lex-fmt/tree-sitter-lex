@@ -166,6 +166,65 @@ More text
         (text_content)))))
 
 ==================
+Extended list markers
+==================
+1. Outer one
+    1.a Middle one
+        1.a.1 Inner one
+        1.a.2 Inner two
+    1.b Middle two
+2. Outer two
+---
+
+(document
+  (list
+    (list_item
+      (list_marker)
+      (text_content)
+      (list
+        (list_item
+          (list_marker)
+          (text_content)
+          (list
+            (list_item
+              (list_marker)
+              (text_content))
+            (list_item
+              (list_marker)
+              (text_content))))
+        (list_item
+          (list_marker)
+          (text_content))))
+    (list_item
+      (list_marker)
+      (text_content))))
+
+==================
+Extended markers with trailing dot
+==================
+1. First
+    1.a. Sub-first
+    1.b. Sub-second
+2. Second
+---
+
+(document
+  (list
+    (list_item
+      (list_marker)
+      (text_content)
+      (list
+        (list_item
+          (list_marker)
+          (text_content))
+        (list_item
+          (list_marker)
+          (text_content))))
+    (list_item
+      (list_marker)
+      (text_content))))
+
+==================
 Numbered session title with marker
 ==================
 1. Introduction
