@@ -1,0 +1,76 @@
+name: Release
+
+permissions:
+  contents: write
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    name: Build tree-sitter artifact
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Generate parser
+        run: npx tree-sitter generate
+
+      - name: Run corpus tests
+        run: npx tree-sitter test
+
+      - name: Build WASM
+        run: npx tree-sitter build --wasm
+
+      - name: Package artifact
+        run: |
+          mkdir -p dist/src dist/queries
+          cp src/parser.c dist/src/
+          cp src/scanner.c dist/src/
+          mkdir -p dist/src/tree_sitter
+          cp src/tree_sitter/parser.h dist/src/tree_sitter/
+          cp queries/*.scm dist/queries/
+          cp grammar.js dist/
+          cp package.json dist/
+          cp tree-sitter.json dist/
+          if [ -f tree-sitter-lex.wasm ]; then
+            cp tree-sitter-lex.wasm dist/
+          fi
+          tar -czvf tree-sitter.tar.gz -C dist .
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tree-sitter
+          path: tree-sitter.tar.gz
+
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: tree-sitter
+          path: artifacts
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: artifacts/*
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

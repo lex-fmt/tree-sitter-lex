@@ -1,0 +1,66 @@
+#!/bin/bash
+#
+# Pre-commit hook for tree-sitter-lex
+# Runs grammar generation, corpus tests, and error-free parsing check.
+#
+# Install: ln -sf ../../scripts/pre-commit .git/hooks/pre-commit
+# Manual:  ./scripts/pre-commit (from repo root)
+
+set -e
+
+REPO_DIR="$(git rev-parse --show-toplevel)"
+SCRIPT_DIR="$REPO_DIR/scripts"
+
+echo "Running pre-commit checks for tree-sitter-lex..."
+
+# 1. Generate parser from grammar
+echo ""
+echo "Generating tree-sitter parser..."
+(cd "$REPO_DIR" && npx tree-sitter generate) || { echo "tree-sitter generate failed!"; exit 1; }
+echo "Generate OK"
+
+# 2. Run corpus tests
+echo ""
+echo "Running corpus tests..."
+if ! (cd "$REPO_DIR" && npx tree-sitter test); then
+    echo ""
+    echo "Corpus tests failed!"
+    exit 1
+fi
+echo "Corpus tests OK"
+
+# 3. Error-free parsing check
+echo ""
+echo "Running error-free parsing check..."
+if ! "$SCRIPT_DIR/error-check.sh"; then
+    echo ""
+    echo "Error-check failed!"
+    exit 1
+fi
+echo "Error-check OK"
+
+# 4. Parity check (only if lex-cli is available)
+LEX_CLI="${LEX_CLI_PATH:-}"
+if [[ -z "$LEX_CLI" ]]; then
+    LEX_CLI="$(command -v lex 2>/dev/null || true)"
+fi
+if [[ -z "$LEX_CLI" ]] && [[ -f "$REPO_DIR/bin/lex" ]]; then
+    LEX_CLI="$REPO_DIR/bin/lex"
+fi
+
+if [[ -n "$LEX_CLI" ]]; then
+    echo ""
+    echo "Running parity check..."
+    if ! "$SCRIPT_DIR/parity-check.sh"; then
+        echo ""
+        echo "Parity check failed!"
+        exit 1
+    fi
+    echo "Parity check OK"
+else
+    echo ""
+    echo "Skipping parity check (lex-cli not found — run scripts/download-lex-cli.sh)"
+fi
+
+echo ""
+echo "All pre-commit checks passed!"

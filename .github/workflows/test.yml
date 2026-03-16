@@ -1,0 +1,79 @@
+name: Tree-sitter CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Generate parser
+        run: npx tree-sitter generate
+
+      - name: Corpus tests
+        run: npx tree-sitter test
+
+      - name: Error-free parsing check
+        run: scripts/error-check.sh
+
+  parity:
+    name: Parity check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Generate parser
+        run: npx tree-sitter generate
+
+      - name: Read lex-cli version
+        id: deps
+        run: |
+          LEX_CLI_VERSION=$(jq -r '.["lex-cli"]' shared/lex-deps.json)
+          echo "version=$LEX_CLI_VERSION" >> $GITHUB_OUTPUT
+          echo "Using lex-cli $LEX_CLI_VERSION"
+
+      - name: Download lex-cli
+        uses: robinraju/release-downloader@v1.8
+        with:
+          repository: lex-fmt/lex
+          tag: ${{ steps.deps.outputs.version }}
+          fileName: "lex-x86_64-unknown-linux-gnu.tar.gz"
+          tarBall: false
+          zipBall: false
+          out-file-path: /tmp
+
+      - name: Install lex-cli
+        run: |
+          tar -xzf /tmp/lex-x86_64-unknown-linux-gnu.tar.gz -C /usr/local/bin/
+          chmod +x /usr/local/bin/lex
+
+      - name: Parity check
+        env:
+          LEX_CLI_PATH: /usr/local/bin/lex
+        run: scripts/parity-check.sh
