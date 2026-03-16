@@ -806,14 +806,18 @@ bool tree_sitter_lex_external_scanner_scan(void *payload, TSLexer *lexer,
 
             // Scan rest of line to check for trailing : and matching closer
             int32_t last_char = next_char;
+            int32_t last_nonws = (next_char != ' ' && next_char != '\t') ? next_char : 0;
             bool has_closer = false;
             while (lexer->lookahead != '\n' && !lexer->eof(lexer)) {
                 if (lexer->lookahead == delimiter) has_closer = true;
                 last_char = lexer->lookahead;
+                if (lexer->lookahead != ' ' && lexer->lookahead != '\t') {
+                    last_nonws = lexer->lookahead;
+                }
                 lexer->advance(lexer, false);
             }
 
-            if (last_char == ':') {
+            if (last_nonws == ':') {
                 // Subject line — check for definition subject first
                 lexer->mark_end(lexer);  // mark at EOL for full line
                 if (valid_symbols[DEFINITION_SUBJECT]) {
@@ -880,14 +884,16 @@ bool tree_sitter_lex_external_scanner_scan(void *payload, TSLexer *lexer,
             // subject_content scan continues from there to EOL.
         }
 
-        // Try subject content: entire line ending with :
+        // Try subject content: entire line ending with : (ignoring trailing whitespace)
         if (valid_symbols[SUBJECT_CONTENT] || valid_symbols[DEFINITION_SUBJECT]) {
-            int32_t last_char = 0;
+            int32_t last_nonws = 0;
             while (lexer->lookahead != '\n' && !lexer->eof(lexer)) {
-                last_char = lexer->lookahead;
+                if (lexer->lookahead != ' ' && lexer->lookahead != '\t') {
+                    last_nonws = lexer->lookahead;
+                }
                 lexer->advance(lexer, false);
             }
-            if (last_char == ':') {
+            if (last_nonws == ':') {
                 lexer->mark_end(lexer);
 
                 // If DEFINITION_SUBJECT is valid, peek ahead for indent
@@ -978,15 +984,17 @@ bool tree_sitter_lex_external_scanner_scan(void *payload, TSLexer *lexer,
         // Not a list marker — fall through
     }
 
-    // Try subject content: entire line ending with :
+    // Try subject content: entire line ending with : (ignoring trailing whitespace)
     if (valid_symbols[SUBJECT_CONTENT] || valid_symbols[DEFINITION_SUBJECT]) {
         lexer->mark_end(lexer);
-        int32_t last_char = 0;
+        int32_t last_nonws = 0;
         while (lexer->lookahead != '\n' && !lexer->eof(lexer)) {
-            last_char = lexer->lookahead;
+            if (lexer->lookahead != ' ' && lexer->lookahead != '\t') {
+                last_nonws = lexer->lookahead;
+            }
             lexer->advance(lexer, false);
         }
-        if (last_char == ':') {
+        if (last_nonws == ':') {
             lexer->mark_end(lexer);
 
             if (valid_symbols[DEFINITION_SUBJECT]) {
