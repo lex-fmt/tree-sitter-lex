@@ -1,8 +1,8 @@
 #!/bin/bash
 # Pre-commit hook for tree-sitter-lex.
-# Runs the same checks as CI via scripts/check.
+# Runs the same checks as CI via scripts/test-all.
 #
 # Install: ln -sf ../../scripts/pre-commit .git/hooks/pre-commit
 
 REPO_DIR="$(git rev-parse --show-toplevel)"
-exec "$REPO_DIR/scripts/check"
+exec "$REPO_DIR/scripts/test-all"

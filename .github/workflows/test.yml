@@ -24,4 +24,4 @@ jobs:
         run: npm install
 
       - name: Run all checks
-        run: scripts/check
+        run: scripts/test-all

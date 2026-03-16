@@ -31,8 +31,8 @@ shared/
 
 ```sh
 npm install                  # install tree-sitter CLI (one time)
-./scripts/check              # run ALL checks (same as pre-commit and CI)
-./scripts/check --quick      # skip parity (for rapid iteration)
+./scripts/test-all              # run ALL checks (same as pre-commit and CI)
+./scripts/test-all --quick      # skip parity (for rapid iteration)
 ./scripts/test-tree-shape    # just corpus tests
 ./scripts/test-no-errors     # just error-free parsing
 ./scripts/test-parity        # just parity comparison
@@ -40,7 +40,7 @@ npm install                  # install tree-sitter CLI (one time)
 
 ## Testing Philosophy
 
-One entry point (`scripts/check`) runs the same checks everywhere — pre-commit,
+One entry point (`scripts/test-all`) runs the same checks everywhere — pre-commit,
 CI, manual. No silent skips, no context-dependent behavior. If a dependency is
 needed, it's fetched automatically.
 
