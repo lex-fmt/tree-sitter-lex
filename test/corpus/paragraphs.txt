@@ -78,13 +78,14 @@ Second paragraph.
 ; The lex-core parser correctly treats this as a multi-line paragraph.
 
 (document
-  (document_title
-    title: (line_content
-      (text_content))
-    (document_subtitle
-      subtitle: (line_content
+  (paragraph
+    (text_line
+      (line_content
         (text_content)))
-    (blank_line))
+    (text_line
+      (line_content
+        (text_content))))
+  (blank_line)
   (paragraph
     (text_line
       (line_content

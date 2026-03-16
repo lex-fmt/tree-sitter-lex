@@ -89,7 +89,9 @@ module.exports = grammar({
     // blank_line after dedent: part of list_item's trailing blanks or next block
     [$.list_item],
     [$._list_start_item],
-    // subject_content: verbatim vs line_content vs session title
+    // subject_content: document_title vs verbatim vs line_content vs session title
+    [$.document_title, $.verbatim_block, $.line_content, $._session_title],
+    [$._title_subject_content, $._session_title, $.verbatim_block, $.line_content],
     [$.verbatim_block, $.line_content, $._session_title],
     // _definition_subject: verbatim vs definition vs session title
     [$.verbatim_block, $.definition, $._session_title],
@@ -99,6 +101,7 @@ module.exports = grammar({
     [$._session_title, $.line_content],
     // blank lines between verbatim groups: body's repeat vs group_item's repeat
     [$.verbatim_group_item],
+    [$.verbatim_group_item, $._session_title],
   ],
 
   rules: {
@@ -127,9 +130,9 @@ module.exports = grammar({
       prec.dynamic(
         2,
         choice(
-          // Title with subtitle: title line + subtitle line + blank lines
+          // Title with subtitle: title line must end with colon (subject_content) + subtitle line + blank lines
           seq(
-            field("title", alias($._session_title, $.line_content)),
+            field("title", alias($._title_subject_content, $.line_content)),
             $._newline,
             $.document_subtitle,
             $._newline,
@@ -143,6 +146,8 @@ module.exports = grammar({
           ),
         ),
       ),
+
+    _title_subject_content: ($) => $.subject_content,
 
     _block: ($) =>
       choice(
