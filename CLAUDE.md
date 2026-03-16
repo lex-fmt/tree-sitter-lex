@@ -15,26 +15,42 @@ queries/
   textobjects.scm   nvim-treesitter structural selection
 test/corpus/        Tree-sitter corpus tests
 scripts/
-  pre-commit        Pre-commit hook
-  error-check.sh    Validates all spec fixtures parse without ERROR nodes
-  parity-check.sh   Compares CST with lex-core AST (needs lex-cli binary)
-  parity-print.js   Converts tree-sitter XML output to parity format
-  download-lex-cli.sh  Downloads lex-cli binary for parity testing
+  check             Single entry point — runs all checks (used by pre-commit and CI)
+  test-tree-shape   Corpus tests (tree structure correctness)
+  test-no-errors    Parse all spec fixtures, fail on any ERROR node
+  test-parity       Compare CST with lex-core AST (downloads lex-cli if needed)
+  parity-print.js   Converts tree-sitter XML to parity format
+  parity-ignored.txt  Acknowledged parity divergences (not blocking CI)
+  download-lex-cli.sh  Downloads lex-cli binary
 comms/              Submodule → lex-fmt/comms (grammar specs, test fixtures)
 shared/
-  lex-deps.json     Pins lex-cli version for parity testing
+  lex-deps.json     Pins lex-cli version
 ```
 
 ## Development
 
 ```sh
-npm install                      # install tree-sitter CLI (one time)
-npx tree-sitter generate        # regenerate parser.c from grammar.js
-npx tree-sitter test            # run corpus tests
-./scripts/error-check.sh        # parse spec fixtures, check for ERROR nodes
-./scripts/download-lex-cli.sh   # download lex-cli for parity testing
-LEX_CLI_PATH=./bin/lex ./scripts/parity-check.sh  # compare CST vs AST
+npm install                  # install tree-sitter CLI (one time)
+./scripts/check              # run ALL checks (same as pre-commit and CI)
+./scripts/check --quick      # skip parity (for rapid iteration)
+./scripts/test-tree-shape    # just corpus tests
+./scripts/test-no-errors     # just error-free parsing
+./scripts/test-parity        # just parity comparison
 ```
+
+## Testing Philosophy
+
+One entry point (`scripts/check`) runs the same checks everywhere — pre-commit,
+CI, manual. No silent skips, no context-dependent behavior. If a dependency is
+needed, it's fetched automatically.
+
+Three checks, clear semantics:
+- **test-tree-shape**: does the grammar produce expected tree structures? (corpus tests)
+- **test-no-errors**: can tree-sitter parse all spec documents without ERROR nodes?
+- **test-parity**: does tree-sitter's CST match lex-core's AST?
+
+Pass means pass, fail means fail. Parity divergences in `parity-ignored.txt` are
+acknowledged failures — they don't block CI but they're not "passing."
 
 ## Pre-commit hook
 

@@ -1,0 +1,82 @@
+#!/bin/bash
+# check: single entry point for all tree-sitter-lex quality checks.
+#
+# Runs the same checks in every context: pre-commit hook, CI, manual.
+# If any check fails, the overall result is failure.
+#
+# Usage:
+#   ./scripts/check              # run all checks
+#   ./scripts/check --quick      # skip parity (for rapid iteration)
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+QUICK=false
+
+for arg in "$@"; do
+    case "$arg" in
+        --quick) QUICK=true ;;
+    esac
+done
+
+FAILED=false
+
+echo "═══════════════════════════════════════════"
+echo " tree-sitter-lex checks"
+echo "═══════════════════════════════════════════"
+
+# --- 1. Tree shape (corpus tests) ---
+echo ""
+if "$SCRIPT_DIR/test-tree-shape"; then
+    echo ""
+    echo "  ✔ test-tree-shape"
+else
+    echo ""
+    echo "  ✘ test-tree-shape"
+    FAILED=true
+fi
+
+# --- 2. No ERROR nodes in spec fixtures ---
+echo ""
+echo "───────────────────────────────────────────"
+echo ""
+if "$SCRIPT_DIR/test-no-errors"; then
+    echo ""
+    echo "  ✔ test-no-errors"
+else
+    echo ""
+    echo "  ✘ test-no-errors"
+    FAILED=true
+fi
+
+# --- 3. Parity with lex-core ---
+if ! $QUICK; then
+    echo ""
+    echo "───────────────────────────────────────────"
+    echo ""
+    if "$SCRIPT_DIR/test-parity"; then
+        echo ""
+        echo "  ✔ test-parity"
+    else
+        echo ""
+        echo "  ✘ test-parity"
+        FAILED=true
+    fi
+else
+    echo ""
+    echo "───────────────────────────────────────────"
+    echo ""
+    echo "  ⊘ test-parity (skipped: --quick)"
+fi
+
+# --- Summary ---
+echo ""
+echo "═══════════════════════════════════════════"
+if $FAILED; then
+    echo " RESULT: FAIL"
+    echo "═══════════════════════════════════════════"
+    exit 1
+else
+    echo " RESULT: PASS"
+    echo "═══════════════════════════════════════════"
+fi
