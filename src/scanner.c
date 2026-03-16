@@ -658,9 +658,10 @@ bool tree_sitter_lex_external_scanner_scan(void *payload, TSLexer *lexer,
                     } else {
                         line_indent++;
                     }
-                    // Skip leading indentation so it is not part of VERBATIM_CONTENT,
-                    // matching how the first content line's indent is handled.
-                    lexer->advance(lexer, true);
+                    // Consume indent as part of the VERBATIM_CONTENT token.
+                    // Must use skip=false to avoid resetting token_start_position,
+                    // which would discard all previously consumed content lines.
+                    lexer->advance(lexer, false);
                 }
 
                 // Blank line — include in content
