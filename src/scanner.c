@@ -266,23 +266,32 @@ static bool try_list_marker(TSLexer *lexer) {
 
     if (starts_digit) {
         while (is_digit(lexer->lookahead)) lexer->advance(lexer, false);
-        // Extended form: 1.2.3
+        // Extended form: 1.a, 1.a.1, 2.1.3, etc.
+        // Each segment after the first is dot + digits/letters/roman.
+        // The trailing dot is optional: "1.a " and "1.a. " are both valid.
+        bool is_extended = false;
         while (lexer->lookahead == '.') {
             lexer->advance(lexer, false);
             if (!is_digit(lexer->lookahead) && !is_lower(lexer->lookahead) &&
                 !is_roman_upper(lexer->lookahead)) {
-                // Period followed by space = "1. " style
+                // Period followed by space = "1. " or "1.a. " style
                 if (lexer->lookahead == ' ') {
                     lexer->advance(lexer, false);
                     return true;
                 }
                 return false;
             }
+            is_extended = true;
             while (is_digit(lexer->lookahead) ||
                    is_lower(lexer->lookahead) ||
                    is_roman_upper(lexer->lookahead)) {
                 lexer->advance(lexer, false);
             }
+        }
+        // Extended form without trailing dot: "1.a " or "1.a.1 "
+        if (is_extended && lexer->lookahead == ' ') {
+            lexer->advance(lexer, false);
+            return true;
         }
     } else if (starts_lower) {
         // Single lowercase letter — already consumed
@@ -658,9 +667,10 @@ bool tree_sitter_lex_external_scanner_scan(void *payload, TSLexer *lexer,
                     } else {
                         line_indent++;
                     }
-                    // Skip leading indentation so it is not part of VERBATIM_CONTENT,
-                    // matching how the first content line's indent is handled.
-                    lexer->advance(lexer, true);
+                    // Consume indent as part of the VERBATIM_CONTENT token.
+                    // Must use skip=false to avoid resetting token_start_position,
+                    // which would discard all previously consumed content lines.
+                    lexer->advance(lexer, false);
                 }
 
                 // Blank line — include in content
@@ -805,14 +815,18 @@ bool tree_sitter_lex_external_scanner_scan(void *payload, TSLexer *lexer,
 
             // Scan rest of line to check for trailing : and matching closer
             int32_t last_char = next_char;
+            int32_t last_nonws = (next_char != ' ' && next_char != '\t') ? next_char : 0;
             bool has_closer = false;
             while (lexer->lookahead != '\n' && !lexer->eof(lexer)) {
                 if (lexer->lookahead == delimiter) has_closer = true;
                 last_char = lexer->lookahead;
+                if (lexer->lookahead != ' ' && lexer->lookahead != '\t') {
+                    last_nonws = lexer->lookahead;
+                }
                 lexer->advance(lexer, false);
             }
 
-            if (last_char == ':') {
+            if (last_nonws == ':') {
                 // Subject line — check for definition subject first
                 lexer->mark_end(lexer);  // mark at EOL for full line
                 if (valid_symbols[DEFINITION_SUBJECT]) {
@@ -879,14 +893,16 @@ bool tree_sitter_lex_external_scanner_scan(void *payload, TSLexer *lexer,
             // subject_content scan continues from there to EOL.
         }
 
-        // Try subject content: entire line ending with :
+        // Try subject content: entire line ending with : (ignoring trailing whitespace)
         if (valid_symbols[SUBJECT_CONTENT] || valid_symbols[DEFINITION_SUBJECT]) {
-            int32_t last_char = 0;
+            int32_t last_nonws = 0;
             while (lexer->lookahead != '\n' && !lexer->eof(lexer)) {
-                last_char = lexer->lookahead;
+                if (lexer->lookahead != ' ' && lexer->lookahead != '\t') {
+                    last_nonws = lexer->lookahead;
+                }
                 lexer->advance(lexer, false);
             }
-            if (last_char == ':') {
+            if (last_nonws == ':') {
                 lexer->mark_end(lexer);
 
                 // If DEFINITION_SUBJECT is valid, peek ahead for indent
@@ -977,15 +993,17 @@ bool tree_sitter_lex_external_scanner_scan(void *payload, TSLexer *lexer,
         // Not a list marker — fall through
     }
 
-    // Try subject content: entire line ending with :
+    // Try subject content: entire line ending with : (ignoring trailing whitespace)
     if (valid_symbols[SUBJECT_CONTENT] || valid_symbols[DEFINITION_SUBJECT]) {
         lexer->mark_end(lexer);
-        int32_t last_char = 0;
+        int32_t last_nonws = 0;
         while (lexer->lookahead != '\n' && !lexer->eof(lexer)) {
-            last_char = lexer->lookahead;
+            if (lexer->lookahead != ' ' && lexer->lookahead != '\t') {
+                last_nonws = lexer->lookahead;
+            }
             lexer->advance(lexer, false);
         }
-        if (last_char == ':') {
+        if (last_nonws == ':') {
             lexer->mark_end(lexer);
 
             if (valid_symbols[DEFINITION_SUBJECT]) {

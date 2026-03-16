@@ -202,6 +202,39 @@ function printVerbatimChild(node, depth, wallCol) {
       break;
     }
 
+    case "verbatim_content": {
+      // Fullwidth verbatim: opaque content block from scanner.
+      // Split into lines and print each as a quoted VerbatimLine.
+      const rawText = decodeXML(node.text || "");
+      const lines = rawText.split("\n");
+      for (let i = 0; i < lines.length; i++) {
+        // Skip empty trailing element from final \n split
+        if (i === lines.length - 1 && lines[i] === "") continue;
+        console.log(`${ind(depth)}"${lines[i]}"`);
+      }
+      break;
+    }
+
+    case "verbatim_group_item": {
+      // Additional subject/content pair in a verbatim group.
+      // Print subject, then recurse into content children.
+      const subjectNode = findField(node, "subject");
+      const subject = subjectNode
+        ? leafText(subjectNode).replace(/:\s*$/, "").trimEnd()
+        : "";
+      console.log(`${ind(depth)}VerbatimGroupItem "${subject}"`);
+      for (const child of node.children) {
+        if (child.attrs.field === "subject") continue;
+        if (
+          child.tag === "annotation_marker" ||
+          child.tag === "annotation_header"
+        )
+          continue;
+        printVerbatimChild(child, depth + 1, wallCol);
+      }
+      break;
+    }
+
     default:
       // Skip annotation markers, closing labels, etc.
       break;
@@ -260,7 +293,7 @@ function printParity(node, depth) {
     case "definition": {
       const subjectNode = findField(node, "subject");
       const subject = subjectNode
-        ? leafText(subjectNode).replace(/:$/, "")
+        ? leafText(subjectNode).replace(/:\s*$/, "").trimEnd()
         : "";
       console.log(`${ind(depth)}Definition "${subject}"`);
       for (const child of node.children) {
@@ -310,7 +343,7 @@ function printParity(node, depth) {
     case "verbatim_block": {
       const subjectNode = findField(node, "subject");
       const subject = subjectNode
-        ? leafText(subjectNode).replace(/:$/, "")
+        ? leafText(subjectNode).replace(/:\s*$/, "").trimEnd()
         : "";
       console.log(`${ind(depth)}VerbatimBlock "${subject}"`);
       const wallCol = detectWallCol(node);

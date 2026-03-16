@@ -55,10 +55,6 @@ comms/specs/elements/list.docs/list-10-nested-deep-only.lex
 comms/specs/elements/list.docs/list-11-nested.lex
 comms/specs/elements/list.docs/list-13-single-item-is-paragraph.lex
 
-# --- Extended list markers ---
-# Tree-sitter doesn't handle extended marker forms (2.1., 1.a., 1.a.i.).
-comms/specs/elements/list.docs/list-12-nested-three-full-form.lex
-
 # --- Verbatim leading blank lines ---
 # Lex-core includes the optional blank line after the subject as an empty
 # VerbatimLine (""); tree-sitter doesn't emit a blank_line node for it.
@@ -71,17 +67,6 @@ comms/specs/elements/verbatim.docs/verbatim-07-nested-in-list.lex
 comms/specs/elements/verbatim.docs/verbatim-08-nested-deep.lex
 comms/specs/elements/verbatim.docs/verbatim-09-flat-simple-beyong-wall.lex
 comms/specs/elements/verbatim.docs/verbatim-15-inflow-leading-blank.lex
-
-# --- Verbatim groups ---
-# Lex-core merges multi-subject verbatim groups; tree-sitter doesn't.
-comms/specs/elements/verbatim.docs/verbatim-11-group-shell.lex
-comms/specs/elements/verbatim.docs/verbatim-13-group-spades.lex
-
-# --- Fullwidth verbatim ---
-# Tree-sitter doesn't fully handle fullwidth mode (wall at column 2).
-comms/specs/elements/verbatim.docs/verbatim-14-fullwidth.lex
-comms/specs/elements/verbatim.docs/verbatim-16-fullwidth-nested.lex
-comms/specs/elements/verbatim.docs/verbatim-17-fullwidth-leading-blank.lex
 
 # --- Table merge markers ---
 # Lex-core resolves >> (colspan) and ^^ (rowspan) merge markers during AST

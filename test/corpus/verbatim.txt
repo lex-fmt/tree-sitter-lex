@@ -303,3 +303,69 @@ Also has content:
     (annotation_marker)
     (annotation_header)
     (annotation_marker)))
+
+==================
+Subject with trailing whitespace
+==================
+Code: 
+    print("hello")
+:: python ::
+---
+
+(document
+  (verbatim_block
+    subject: (subject_content)
+    (paragraph
+      (text_line
+        (line_content
+          (text_content))))
+    (annotation_marker)
+    (annotation_header)
+    (annotation_marker)))
+
+==================
+Verbatim group with trailing whitespace on subjects
+==================
+Step one: 
+	$ ls
+Step two: 
+	$ pwd
+:: shell ::
+---
+
+(document
+  (verbatim_block
+    subject: (subject_content)
+    (paragraph
+      (text_line
+        (line_content
+          (text_content))))
+    (verbatim_group_item
+      subject: (subject_content)
+      (paragraph
+        (text_line
+          (line_content
+            (text_content)))))
+    (annotation_marker)
+    (annotation_header)
+    (annotation_marker)))
+
+==================
+Fullwidth with many content lines
+==================
+Table:
+ Header | Value | Notes
+ -------+-------+------
+ Alpha  | 10    | first
+Beta   | 25    | second
+ Gamma  | 30    | third
+:: data ::
+---
+
+(document
+  (verbatim_block
+    subject: (subject_content)
+    (verbatim_content)
+    (annotation_marker)
+    (annotation_header)
+    (annotation_marker)))
