@@ -369,7 +369,8 @@ function printParity(node, depth) {
       }
       break;
 
-    case "text_line": {
+    case "text_line":
+    case "dialog_line": {
       const text = leafText(node).trimStart().trimEnd();
       console.log(`${ind(depth)}"${text}"`);
       break;
