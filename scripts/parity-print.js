@@ -241,6 +241,20 @@ function printVerbatimChild(node, depth, wallCol) {
   }
 }
 
+// Mark the last non-blank content child in a container. Used to tell
+// lists whether their trailing blank_line should be suppressed.
+function markLastContent(children) {
+  for (let i = children.length - 1; i >= 0; i--) {
+    const tag = children[i].tag;
+    if (tag && tag !== "blank_line") {
+      if (tag === "list") {
+        children[i]._isLastContentInParent = true;
+      }
+      break;
+    }
+  }
+}
+
 function printParity(node, depth) {
   if (!node || !node.tag) return;
 
@@ -248,6 +262,7 @@ function printParity(node, depth) {
     case "document": {
       console.log(`${ind(depth)}Document`);
       const children = node.children;
+      markLastContent(children);
       for (let i = 0; i < children.length; i++) {
         const child = children[i];
         // Suppress trailing blank line at document level — CST artifact from final newline;
@@ -283,6 +298,7 @@ function printParity(node, depth) {
       const titleNode = findField(node, "title");
       const title = titleNode ? leafText(titleNode) : "";
       console.log(`${ind(depth)}Session "${title}"`);
+      markLastContent(node.children);
       for (const child of node.children) {
         if (child.attrs.field === "title") continue;
         printParity(child, depth + 1);
@@ -296,6 +312,7 @@ function printParity(node, depth) {
         ? leafText(subjectNode).replace(/:\s*$/, "").trimEnd()
         : "";
       console.log(`${ind(depth)}Definition "${subject}"`);
+      markLastContent(node.children);
       for (const child of node.children) {
         if (child.attrs.field === "subject") continue;
         printParity(child, depth + 1);
@@ -303,12 +320,22 @@ function printParity(node, depth) {
       break;
     }
 
-    case "list":
+    case "list": {
       console.log(`${ind(depth)}List`);
+      // When the list is the last content element in its parent container,
+      // the last list item's trailing blank_line is a grammar artifact
+      // (keeps the list open after nested content). lex-core does NOT
+      // include it. But when the list has sibling elements after it,
+      // lex-core DOES include the trailing blank.
+      const listItems = node.children.filter((c) => c.tag === "list_item");
+      if (listItems.length > 0 && node._isLastContentInParent) {
+        listItems[listItems.length - 1]._suppressTrailingBlank = true;
+      }
       for (const child of node.children) {
         printParity(child, depth + 1);
       }
       break;
+    }
 
     case "list_item": {
       const markerNode = node.children.find((c) => c.tag === "list_marker");
@@ -319,8 +346,16 @@ function printParity(node, depth) {
         const text = leafText(textNode).trimStart();
         console.log(`${ind(depth + 1)}"${text}"`);
       }
-      for (const child of node.children) {
+      const itemChildren = node.children;
+      for (let i = 0; i < itemChildren.length; i++) {
+        const child = itemChildren[i];
         if (child.tag === "list_marker" || child.tag === "text_content")
+          continue;
+        if (
+          node._suppressTrailingBlank &&
+          child.tag === "blank_line" &&
+          i === itemChildren.length - 1
+        )
           continue;
         printParity(child, depth + 1);
       }
@@ -368,6 +403,7 @@ function printParity(node, depth) {
       const headerText = headerNode ? leafText(headerNode).trim() : "";
       const label = (headerText.split(/\s+/)[0] || "").replace(/:$/, "");
       console.log(`${ind(depth)}Annotation "${label}"`);
+      markLastContent(node.children);
       for (const child of node.children) {
         if (
           child.tag === "annotation_marker" ||
