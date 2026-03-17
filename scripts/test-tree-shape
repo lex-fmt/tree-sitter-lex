@@ -1,0 +1,18 @@
+#!/bin/bash
+# test-tree-shape: verify tree-sitter produces expected tree structures.
+#
+# Runs the corpus tests in test/corpus/. Each test defines input text and
+# the expected parse tree shape. This is the most basic correctness check.
+#
+# Exit 0 = all pass, exit 1 = any failure.
+
+set -euo pipefail
+
+REPO_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+
+echo "test-tree-shape: corpus tests"
+echo ""
+
+cd "$REPO_DIR"
+npx tree-sitter generate >/dev/null 2>&1
+npx tree-sitter test

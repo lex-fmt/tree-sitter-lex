@@ -1,0 +1,99 @@
+#!/bin/bash
+# test-all: single entry point for all tree-sitter-lex quality checks.
+#
+# Runs the same checks in every context: pre-commit hook, CI, manual.
+#
+# Usage:
+#   ./scripts/test-all                # run all checks
+#   ./scripts/test-all --quick        # skip parity
+#
+# Run subsets directly via bats:
+#   npx bats test/generated/no-errors.bats              # just error checks
+#   npx bats test/generated/parity.bats                 # just parity
+#   npx bats --filter "annotation-01" test/generated/   # single file
+#   npx bats --filter "fullwidth" test/generated/       # pattern match
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+QUICK=false
+for arg in "$@"; do
+    case "$arg" in
+        --quick) QUICK=true ;;
+    esac
+done
+
+cd "$REPO_DIR"
+FAILED=false
+
+# --- 1. Generate parser ---
+echo "Generating parser..."
+npx tree-sitter generate >/dev/null 2>&1
+
+# --- 2. Tree shape (corpus tests) ---
+echo ""
+echo "═══ test-tree-shape ═══"
+echo ""
+if npx tree-sitter test; then
+    true
+else
+    FAILED=true
+fi
+
+# --- 3. Generate bats tests from spec fixtures ---
+echo ""
+echo "═══ Generating bats tests ═══"
+echo ""
+bash test/generate-tests.sh
+
+# --- 4. No-errors (bats) ---
+echo ""
+echo "═══ test-no-errors ═══"
+echo ""
+if npx bats test/generated/no-errors.bats; then
+    true
+else
+    FAILED=true
+fi
+
+# --- 5. Parity (bats) ---
+if ! $QUICK; then
+    # Ensure lex-cli is available
+    export LEX_CLI="${LEX_CLI_PATH:-}"
+    if [[ -z "$LEX_CLI" ]] && [[ -f "$REPO_DIR/bin/lex" ]]; then
+        LEX_CLI="$REPO_DIR/bin/lex"
+    fi
+    if [[ -z "$LEX_CLI" ]]; then
+        echo ""
+        echo "Downloading lex-cli..."
+        LEX_CLI=$("$SCRIPT_DIR/download-lex-cli.sh" 2>/dev/null | tail -1)
+    fi
+    if [[ -z "$LEX_CLI" ]] || [[ ! -x "$LEX_CLI" ]]; then
+        echo "Error: could not obtain lex-cli binary." >&2
+        FAILED=true
+    else
+        export LEX_CLI
+        echo ""
+        echo "═══ test-parity (lex-cli: $($LEX_CLI --version 2>&1)) ═══"
+        echo ""
+        if npx bats test/generated/parity.bats; then
+            true
+        else
+            FAILED=true
+        fi
+    fi
+else
+    echo ""
+    echo "═══ test-parity (skipped: --quick) ═══"
+fi
+
+# --- Summary ---
+echo ""
+if $FAILED; then
+    echo "RESULT: FAIL"
+    exit 1
+else
+    echo "RESULT: PASS"
+fi
