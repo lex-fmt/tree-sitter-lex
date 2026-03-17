@@ -396,7 +396,7 @@
           },
           {
             "type": "SYMBOL",
-            "name": "annotation_marker"
+            "name": "annotation_close"
           },
           {
             "type": "SYMBOL",
@@ -821,7 +821,7 @@
         },
         {
           "type": "SYMBOL",
-          "name": "annotation_marker"
+          "name": "annotation_close"
         },
         {
           "type": "CHOICE",
@@ -874,7 +874,7 @@
         },
         {
           "type": "SYMBOL",
-          "name": "annotation_marker"
+          "name": "annotation_close"
         },
         {
           "type": "CHOICE",
@@ -1671,6 +1671,10 @@
     {
       "type": "SYMBOL",
       "name": "_table_separator"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "annotation_close"
     }
   ],
   "inline": [],

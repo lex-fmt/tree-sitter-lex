@@ -28,7 +28,7 @@ Results:
       (pipe_delimiter))
     (annotation_marker)
     (annotation_header)
-    (annotation_marker)))
+    (annotation_close)))
 
 ==================
 Table with parameters
@@ -60,7 +60,7 @@ Data:
       (pipe_delimiter))
     (annotation_marker)
     (annotation_header)
-    (annotation_marker)))
+    (annotation_close)))
 
 ==================
 Table with inline formatting in cells
@@ -96,7 +96,7 @@ Stats:
       (pipe_delimiter))
     (annotation_marker)
     (annotation_header)
-    (annotation_marker)))
+    (annotation_close)))
 
 ==================
 Table nested in definition
@@ -131,7 +131,7 @@ Summary:
         (pipe_delimiter))
       (annotation_marker)
       (annotation_header)
-      (annotation_marker))))
+      (annotation_close))))
 
 ==================
 Table with separator line
@@ -165,7 +165,7 @@ Data:
       (pipe_delimiter))
     (annotation_marker)
     (annotation_header)
-    (annotation_marker)))
+    (annotation_close)))
 
 ==================
 Table with merge markers
@@ -209,7 +209,7 @@ Matrix:
       (pipe_delimiter))
     (annotation_marker)
     (annotation_header)
-    (annotation_marker)))
+    (annotation_close)))
 
 ==================
 Table with empty cells
@@ -247,7 +247,7 @@ Sparse:
       (pipe_delimiter))
     (annotation_marker)
     (annotation_header)
-    (annotation_marker)))
+    (annotation_close)))
 
 ==================
 Table with multi-line mode (blank line between rows)
@@ -281,7 +281,7 @@ Log:
       (pipe_delimiter))
     (annotation_marker)
     (annotation_header)
-    (annotation_marker)))
+    (annotation_close)))
 
 ==================
 Table with references in cells
@@ -317,4 +317,4 @@ Refs:
       (pipe_delimiter))
     (annotation_marker)
     (annotation_header)
-    (annotation_marker)))
+    (annotation_close)))

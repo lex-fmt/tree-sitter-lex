@@ -84,6 +84,7 @@
 ; === Annotations (generic) ===
 ; Annotation delimiters (LSP: part of AnnotationLabel)
 (annotation_marker) @punctuation.special
+(annotation_close) @punctuation.special
 
 ; Annotation header — the label between :: markers (LSP: AnnotationLabel)
 (annotation_header) @comment
@@ -101,6 +102,8 @@
 ; annotation captures so they take priority.
 (verbatim_block
   (annotation_marker) @markup.raw.block)
+(verbatim_block
+  (annotation_close) @markup.raw.block)
 (verbatim_block
   (annotation_header) @markup.raw.block)
 
