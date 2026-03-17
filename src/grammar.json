@@ -223,6 +223,15 @@
                   "value": "list_marker"
                 },
                 {
+                  "type": "ALIAS",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "_session_marker"
+                  },
+                  "named": true,
+                  "value": "list_marker"
+                },
+                {
                   "type": "SYMBOL",
                   "name": "list_marker"
                 }
@@ -1675,6 +1684,10 @@
     {
       "type": "SYMBOL",
       "name": "annotation_close"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_session_marker"
     }
   ],
   "inline": [],

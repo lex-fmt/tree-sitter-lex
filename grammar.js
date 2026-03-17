@@ -76,6 +76,7 @@ module.exports = grammar({
     $.pipe_delimiter, // subsequent | inside an active pipe row
     $._table_separator, // full separator line: |---|---|
     $.annotation_close, // closing ":: " mid-line (only valid inside annotation/verbatim rules)
+    $._session_marker, // list_marker when next line is blank (session title, not list/dialog)
   ],
 
   extras: (_$) => [],
@@ -182,7 +183,11 @@ module.exports = grammar({
     _session_title: ($) =>
       choice(
         seq(
-          choice(alias($._list_start, $.list_marker), $.list_marker),
+          choice(
+            alias($._list_start, $.list_marker),
+            alias($._session_marker, $.list_marker),
+            $.list_marker,
+          ),
           optional($.text_content),
         ),
         choice(
