@@ -1178,8 +1178,11 @@ bool tree_sitter_lex_external_scanner_scan(void *payload, TSLexer *lexer,
         if (try_list_marker(lexer)) {
             lexer->mark_end(lexer);
 
-            // Combined check (same as at-line-start branch)
-            int result = check_list_or_session(lexer, scanner->line_indent);
+            // Use the current indent from the stack, not scanner->line_indent
+            // which may be stale after _session_break (it records the blank
+            // line's indent, not the content line's indent).
+            int current_indent = scanner->indent_stack[scanner->indent_depth];
+            int result = check_list_or_session(lexer, current_indent);
 
             if (result == -1 && valid_symbols[SESSION_MARKER]) {
                 lexer->result_symbol = SESSION_MARKER;
