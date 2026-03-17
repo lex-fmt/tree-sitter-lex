@@ -15,13 +15,16 @@ queries/
   textobjects.scm   nvim-treesitter structural selection
 test/corpus/        Tree-sitter corpus tests
 scripts/
-  check             Single entry point — runs all checks (used by pre-commit and CI)
+  test-all          Single entry point — runs all checks (used by pre-commit and CI)
   test-tree-shape   Corpus tests (tree structure correctness)
-  test-no-errors    Parse all spec fixtures, fail on any ERROR node
-  test-parity       Compare CST with lex-core AST (downloads lex-cli if needed)
   parity-print.js   Converts tree-sitter XML to parity format
-  parity-ignored.txt  Acknowledged parity divergences (not blocking CI)
+  parity-ignored.txt  Acknowledged parity divergences (bats skip)
   download-lex-cli.sh  Downloads lex-cli binary
+test/
+  corpus/           Tree-sitter corpus tests (test-tree-shape)
+  helpers.bash      Shared bats helpers (assert_no_errors, assert_parity)
+  generate-tests.sh Generates bats tests from spec fixtures
+  generated/        Auto-generated .bats files (gitignored)
 comms/              Submodule → lex-fmt/comms (grammar specs, test fixtures)
 shared/
   lex-deps.json     Pins lex-cli version
@@ -31,11 +34,13 @@ shared/
 
 ```sh
 npm install                  # install tree-sitter CLI (one time)
-./scripts/test-all              # run ALL checks (same as pre-commit and CI)
-./scripts/test-all --quick      # skip parity (for rapid iteration)
-./scripts/test-tree-shape    # just corpus tests
-./scripts/test-no-errors     # just error-free parsing
-./scripts/test-parity        # just parity comparison
+./scripts/test-all                                    # run ALL checks (same as pre-commit and CI)
+./scripts/test-all --quick                            # skip parity (for rapid iteration)
+./scripts/test-tree-shape                             # just corpus tests
+npx bats test/generated/no-errors.bats                # just error-free parsing (after generate)
+npx bats test/generated/parity.bats                   # just parity (after generate, needs LEX_CLI)
+npx bats --filter "annotation-01" test/generated/     # single file by name
+npx bats --filter "fullwidth" test/generated/         # pattern match
 ```
 
 ## Testing Philosophy
@@ -46,11 +51,14 @@ needed, it's fetched automatically.
 
 Three checks, clear semantics:
 - **test-tree-shape**: does the grammar produce expected tree structures? (corpus tests)
-- **test-no-errors**: can tree-sitter parse all spec documents without ERROR nodes?
-- **test-parity**: does tree-sitter's CST match lex-core's AST?
+- **test-no-errors**: can tree-sitter parse all spec documents without ERROR nodes? (bats)
+- **test-parity**: does tree-sitter's CST match lex-core's AST? (bats)
 
 Pass means pass, fail means fail. Parity divergences in `parity-ignored.txt` are
-acknowledged failures — they don't block CI but they're not "passing."
+acknowledged failures — bats reports them as "skipped", not "passing."
+
+test-no-errors and test-parity use [bats-core](https://github.com/bats-core/bats-core)
+— each spec fixture is an individual test case with TAP output.
 
 ## Pre-commit hook
 

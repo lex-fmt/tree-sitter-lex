@@ -1,82 +1,99 @@
 #!/bin/bash
-# check: single entry point for all tree-sitter-lex quality checks.
+# test-all: single entry point for all tree-sitter-lex quality checks.
 #
 # Runs the same checks in every context: pre-commit hook, CI, manual.
-# If any check fails, the overall result is failure.
 #
 # Usage:
-#   ./scripts/check              # run all checks
-#   ./scripts/check --quick      # skip parity (for rapid iteration)
+#   ./scripts/test-all                # run all checks
+#   ./scripts/test-all --quick        # skip parity
+#
+# Run subsets directly via bats:
+#   npx bats test/generated/no-errors.bats              # just error checks
+#   npx bats test/generated/parity.bats                 # just parity
+#   npx bats --filter "annotation-01" test/generated/   # single file
+#   npx bats --filter "fullwidth" test/generated/       # pattern match
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-QUICK=false
+REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
+QUICK=false
 for arg in "$@"; do
     case "$arg" in
         --quick) QUICK=true ;;
     esac
 done
 
+cd "$REPO_DIR"
 FAILED=false
 
-echo "═══════════════════════════════════════════"
-echo " tree-sitter-lex checks"
-echo "═══════════════════════════════════════════"
+# --- 1. Generate parser ---
+echo "Generating parser..."
+npx tree-sitter generate >/dev/null 2>&1
 
-# --- 1. Tree shape (corpus tests) ---
+# --- 2. Tree shape (corpus tests) ---
 echo ""
-if "$SCRIPT_DIR/test-tree-shape"; then
-    echo ""
-    echo "  ✔ test-tree-shape"
+echo "═══ test-tree-shape ═══"
+echo ""
+if npx tree-sitter test; then
+    true
 else
-    echo ""
-    echo "  ✘ test-tree-shape"
     FAILED=true
 fi
 
-# --- 2. No ERROR nodes in spec fixtures ---
+# --- 3. Generate bats tests from spec fixtures ---
 echo ""
-echo "───────────────────────────────────────────"
+echo "═══ Generating bats tests ═══"
 echo ""
-if "$SCRIPT_DIR/test-no-errors"; then
-    echo ""
-    echo "  ✔ test-no-errors"
+bash test/generate-tests.sh
+
+# --- 4. No-errors (bats) ---
+echo ""
+echo "═══ test-no-errors ═══"
+echo ""
+if npx bats test/generated/no-errors.bats; then
+    true
 else
-    echo ""
-    echo "  ✘ test-no-errors"
     FAILED=true
 fi
 
-# --- 3. Parity with lex-core ---
+# --- 5. Parity (bats) ---
 if ! $QUICK; then
-    echo ""
-    echo "───────────────────────────────────────────"
-    echo ""
-    if "$SCRIPT_DIR/test-parity"; then
+    # Ensure lex-cli is available
+    export LEX_CLI="${LEX_CLI_PATH:-}"
+    if [[ -z "$LEX_CLI" ]] && [[ -f "$REPO_DIR/bin/lex" ]]; then
+        LEX_CLI="$REPO_DIR/bin/lex"
+    fi
+    if [[ -z "$LEX_CLI" ]]; then
         echo ""
-        echo "  ✔ test-parity"
-    else
-        echo ""
-        echo "  ✘ test-parity"
+        echo "Downloading lex-cli..."
+        LEX_CLI=$("$SCRIPT_DIR/download-lex-cli.sh" 2>/dev/null | tail -1)
+    fi
+    if [[ -z "$LEX_CLI" ]] || [[ ! -x "$LEX_CLI" ]]; then
+        echo "Error: could not obtain lex-cli binary." >&2
         FAILED=true
+    else
+        export LEX_CLI
+        echo ""
+        echo "═══ test-parity (lex-cli: $($LEX_CLI --version 2>&1)) ═══"
+        echo ""
+        if npx bats test/generated/parity.bats; then
+            true
+        else
+            FAILED=true
+        fi
     fi
 else
     echo ""
-    echo "───────────────────────────────────────────"
-    echo ""
-    echo "  ⊘ test-parity (skipped: --quick)"
+    echo "═══ test-parity (skipped: --quick) ═══"
 fi
 
 # --- Summary ---
 echo ""
-echo "═══════════════════════════════════════════"
 if $FAILED; then
-    echo " RESULT: FAIL"
-    echo "═══════════════════════════════════════════"
+    echo "RESULT: FAIL"
     exit 1
 else
-    echo " RESULT: PASS"
-    echo "═══════════════════════════════════════════"
+    echo "RESULT: PASS"
 fi

@@ -7,17 +7,26 @@
     "type": "git",
     "url": "https://github.com/lex-fmt/tree-sitter-lex"
   },
-  "keywords": ["parser", "tree-sitter", "lex"],
+  "keywords": [
+    "parser",
+    "tree-sitter",
+    "lex"
+  ],
   "license": "MIT",
   "tree-sitter": [
     {
       "scope": "source.lex",
-      "file-types": ["lex"],
+      "file-types": [
+        "lex"
+      ],
       "highlights": "queries/highlights.scm",
       "injections": "queries/injections.scm"
     }
   ],
   "devDependencies": {
+    "bats": "^1.13.0",
+    "bats-assert": "^2.2.4",
+    "bats-support": "^0.3.0",
     "tree-sitter-cli": "^0.25.0"
   },
   "scripts": {
