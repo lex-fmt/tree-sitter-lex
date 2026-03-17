@@ -433,10 +433,12 @@ static bool peek_next_line_has_list_marker(TSLexer *lexer, int expected_indent) 
     return false;
 }
 
-/// Peek ahead to check if the next line has increased indentation.
+/// Peek ahead to check if the next line has increased indentation or
+/// starts with :: (verbatim marker form).
 /// Call AFTER mark_end has been set for the current subject content.
 /// The lexer should be positioned at the \n at end of the subject line.
-/// Returns true if the next line's indent is greater than current_indent.
+/// Returns true if the next line's indent is greater than current_indent,
+/// or if it starts with :: at the same indent (verbatim marker form).
 static bool peek_next_line_has_indent(TSLexer *lexer, int current_indent) {
     // We should be at end of line (\n) or EOF
     if (lexer->eof(lexer)) return false;
@@ -459,7 +461,17 @@ static bool peek_next_line_has_indent(TSLexer *lexer, int current_indent) {
     // Must not be a blank line or EOF
     if (lexer->lookahead == '\n' || lexer->eof(lexer)) return false;
 
-    return next_indent > current_indent;
+    // Increased indent → definition/verbatim content follows
+    if (next_indent > current_indent) return true;
+
+    // Same indent + starts with :: → verbatim marker form (closing annotation
+    // at the same level as the subject, no content between them)
+    if (next_indent == current_indent && lexer->lookahead == ':') {
+        lexer->advance(lexer, false);
+        if (lexer->lookahead == ':') return true;
+    }
+
+    return false;
 }
 
 /// Combined check for list-marker lines: determines if this marker starts
