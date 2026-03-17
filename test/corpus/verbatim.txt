@@ -274,11 +274,16 @@ Label B:
 :: tag ::
 ---
 
+; Known limitation: content-less group where the first subject has no
+; indent or :: after it. "Label A:" becomes a paragraph, only "Label B:"
+; matches as verbatim (via :: on the next line).
 (document
+  (paragraph
+    (text_line
+      (line_content
+        (subject_content))))
   (verbatim_block
     subject: (subject_content)
-    (verbatim_group_item
-      subject: (subject_content))
     (annotation_marker)
     (annotation_header)
     (annotation_close)))

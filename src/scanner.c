@@ -1245,16 +1245,21 @@ bool tree_sitter_lex_external_scanner_scan(void *payload, TSLexer *lexer,
                 lexer->mark_end(lexer);
                 // Remove the debug print as we don't need it
 
+                // Use indent stack (not stale line_indent) for the same
+                // reason as the list marker check — after _session_break,
+                // line_indent holds the blank line's indent (0) not the
+                // content line's indent.
+                int subject_indent = scanner->indent_stack[scanner->indent_depth];
                 if (valid_symbols[DEFINITION_SUBJECT]) {
-                    if (peek_next_line_has_indent(lexer, scanner->line_indent)) {
-                        scanner->last_subject_indent = scanner->line_indent;
+                    if (peek_next_line_has_indent(lexer, subject_indent)) {
+                        scanner->last_subject_indent = subject_indent;
                         lexer->result_symbol = DEFINITION_SUBJECT;
                         return true;
                     }
                 }
 
                 if (valid_symbols[SUBJECT_CONTENT]) {
-                    scanner->last_subject_indent = scanner->line_indent;
+                    scanner->last_subject_indent = subject_indent;
                     lexer->result_symbol = SUBJECT_CONTENT;
                     return true;
                 }

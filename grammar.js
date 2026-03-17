@@ -91,8 +91,6 @@ module.exports = grammar({
     // blank_line after dedent: part of list_item's trailing blanks or next block
     [$.list_item],
     [$._list_start_item],
-    // subject_content: verbatim vs line_content vs session title
-    [$.verbatim_block, $.line_content, $._session_title],
     // _definition_subject: verbatim vs definition vs session title
     [$.verbatim_block, $.definition, $._session_title],
     // verbatim_block shares structure with definition
@@ -205,35 +203,34 @@ module.exports = grammar({
     // Verbatim blocks can contain multiple subject/content pairs (groups)
     // sharing a single closing annotation. The first subject/content lives
     // directly in verbatim_block; additional pairs are verbatim_group_item nodes.
+    // Two-prec verbatim: _definition_subject at prec 6 (scanner confirms
+    // indent/:: follows, no false positives), plain subject_content at prec 1
+    // (for blank+indent case only). The low prec prevents subject_content from
+    // winning GLR over paragraph/session when there's no closing annotation.
     verbatim_block: ($) =>
-      prec.dynamic(
-        6,
-        seq(
-          field(
-            "subject",
-            choice(
+      choice(
+        prec.dynamic(
+          6,
+          seq(
+            field(
+              "subject",
               alias($._definition_subject, $.subject_content),
-              $.subject_content,
             ),
-          ),
-          $._newline,
-          choice(
-            // Blank line(s) + indent: scanner emits _session_break
-            seq($._session_break, repeat1($._block), $._dedent),
-            // No blank line, direct indent (or no content at all)
-            seq(
-              repeat($.blank_line),
-              optional(seq($._indent, repeat1($._block), $._dedent)),
+            $._newline,
+            choice(
+              seq($._session_break, repeat1($._block), $._dedent),
+              seq(
+                repeat($.blank_line),
+                optional(seq($._indent, repeat1($._block), $._dedent)),
+              ),
+              seq(repeat($.blank_line), $.verbatim_content),
             ),
-            // Fullwidth: content at column 1 (sub-indent-width), scanner
-            // emits an opaque multi-line verbatim_content token
-            seq(repeat($.blank_line), $.verbatim_content),
+            repeat($.verbatim_group_item),
+            $.annotation_marker,
+            $.annotation_header,
+            $.annotation_close,
+            $._newline,
           ),
-          repeat($.verbatim_group_item),
-          $.annotation_marker,
-          $.annotation_header,
-          $.annotation_close,
-          $._newline,
         ),
       ),
 
