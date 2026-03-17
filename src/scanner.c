@@ -754,20 +754,43 @@ bool tree_sitter_lex_external_scanner_scan(void *payload, TSLexer *lexer,
         // class tells us what the grammar's token class will be.
         int32_t line_start_char = lexer->lookahead;
 
-        // Try annotation marker: :: at line start
+        // Try annotation marker: :: at line start.
+        // Only emit when the line has a closing :: (valid annotation/verbatim).
+        // Lines like ":: marker. See specs/..." without closing :: are prose
+        // text that happens to start with :: — not annotations.
         if (valid_symbols[ANNOTATION_MARKER] && lexer->lookahead == ':') {
             lexer->advance(lexer, false);
             if (lexer->lookahead == ':') {
                 lexer->advance(lexer, false);
+                // mark_end after "::" — this is our token if we return true
                 lexer->mark_end(lexer);
                 if (lexer->lookahead == ' ') {
                     lexer->advance(lexer, false);
-                    lexer->mark_end(lexer);
+                    lexer->mark_end(lexer); // extend token to ":: "
                 }
-                lexer->result_symbol = ANNOTATION_MARKER;
-                return true;
+                // Peek rest of line for closing :: (advance without mark_end)
+                int32_t prev = 0;
+                bool has_closing = false;
+                while (lexer->lookahead != '\n' && !lexer->eof(lexer)) {
+                    if (prev == ':' && lexer->lookahead == ':') {
+                        has_closing = true;
+                        break;
+                    }
+                    prev = lexer->lookahead;
+                    lexer->advance(lexer, false);
+                }
+                if (has_closing) {
+                    // Valid annotation line — token ends at mark_end (":: ")
+                    lexer->result_symbol = ANNOTATION_MARKER;
+                    return true;
+                }
+                // No closing :: — not an annotation. Return false.
+                // Position resets to before "::" (scan start), so the
+                // grammar lexer handles ":" as regular text.
+                scanner->last_char_class = CHAR_CLASS_PUNCTUATION;
+                return false;
             }
-            // Single colon — not an annotation, let grammar lexer handle it
+            // Single colon — not an annotation
             return false;
         }
 
