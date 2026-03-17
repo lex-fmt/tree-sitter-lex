@@ -12,6 +12,10 @@
           "named": true
         },
         {
+          "type": "annotation_close",
+          "named": true
+        },
+        {
           "type": "annotation_header",
           "named": true
         },
@@ -105,6 +109,10 @@
       "multiple": true,
       "required": true,
       "types": [
+        {
+          "type": "annotation_close",
+          "named": true
+        },
         {
           "type": "annotation_header",
           "named": true
@@ -704,6 +712,10 @@
           "named": true
         },
         {
+          "type": "annotation_close",
+          "named": true
+        },
+        {
           "type": "annotation_header",
           "named": true
         },
@@ -823,6 +835,10 @@
         }
       ]
     }
+  },
+  {
+    "type": "annotation_close",
+    "named": true
   },
   {
     "type": "annotation_header",

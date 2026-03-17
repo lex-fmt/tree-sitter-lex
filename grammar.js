@@ -15,7 +15,7 @@
  * - Scanner emits full-line token: subject_content (line ending with :)
  * - Scanner emits _definition_subject: subject_content when next line has
  *   increased indent (confirms definition/verbatim boundary)
- * - Scanner emits annotation_marker (:: prefix) and annotation_end_marker
+ * - Scanner emits annotation_marker (opening :: at line start) and annotation_close (closing :: mid-line)
  * - Scanner emits emphasis delimiters: _strong_open, _strong_close,
  *   _emphasis_open, _emphasis_close (with flanking validation)
  * - Scanner emits _session_break: blank line(s) + indent increase (lookahead)
@@ -75,6 +75,7 @@ module.exports = grammar({
     $._pipe_row_start, // | at line start when line has pipe structure (≥2 pipes)
     $.pipe_delimiter, // subsequent | inside an active pipe row
     $._table_separator, // full separator line: |---|---|
+    $.annotation_close, // closing ":: " mid-line (only valid inside annotation/verbatim rules)
   ],
 
   extras: (_$) => [],
@@ -222,7 +223,7 @@ module.exports = grammar({
           repeat($.verbatim_group_item),
           $.annotation_marker,
           $.annotation_header,
-          $.annotation_marker,
+          $.annotation_close,
           $._newline,
         ),
       ),
@@ -351,7 +352,7 @@ module.exports = grammar({
       seq(
         $.annotation_marker,
         $.annotation_header,
-        $.annotation_marker,
+        $.annotation_close,
         optional(alias($.text_content, $.annotation_inline_text)),
         $._newline,
         $._indent,
@@ -363,14 +364,14 @@ module.exports = grammar({
       seq(
         $.annotation_marker,
         $.annotation_header,
-        $.annotation_marker,
+        $.annotation_close,
         optional(alias($.text_content, $.annotation_inline_text)),
         $._newline,
       ),
 
     // Annotation header: everything between the :: markers.
     // Allows single colons inside (e.g., :: author: Name ::) but stops
-    // before :: (double colon) which the scanner handles as annotation_marker.
+    // before :: (double colon) which the scanner handles as annotation_close.
     annotation_header: (_$) => /([^:\n]|:[^:\n])+/,
 
     // ===== Paragraphs =====

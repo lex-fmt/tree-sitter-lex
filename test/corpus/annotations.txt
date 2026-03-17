@@ -8,7 +8,7 @@ Single-line annotation
   (annotation_single
     (annotation_marker)
     (annotation_header)
-    (annotation_marker)
+    (annotation_close)
     (annotation_inline_text)))
 
 ==================
@@ -21,7 +21,7 @@ Single-line annotation without text
   (annotation_single
     (annotation_marker)
     (annotation_header)
-    (annotation_marker)))
+    (annotation_close)))
 
 ==================
 Block annotation
@@ -34,7 +34,7 @@ Block annotation
   (annotation_block
     (annotation_marker)
     (annotation_header)
-    (annotation_marker)
+    (annotation_close)
     (paragraph
       (text_line
         (line_content
@@ -51,7 +51,7 @@ Block annotation with inline text and body
   (annotation_block
     (annotation_marker)
     (annotation_header)
-    (annotation_marker)
+    (annotation_close)
     (annotation_inline_text)
     (paragraph
       (text_line
@@ -68,7 +68,7 @@ Annotation inline text with formatting
   (annotation_single
     (annotation_marker)
     (annotation_header)
-    (annotation_marker)
+    (annotation_close)
     (annotation_inline_text
       (strong))))
 
@@ -82,7 +82,7 @@ Annotation inline text with multiple inlines
   (annotation_single
     (annotation_marker)
     (annotation_header)
-    (annotation_marker)
+    (annotation_close)
     (annotation_inline_text
       (reference
         (general_reference))

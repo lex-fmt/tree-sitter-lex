@@ -15,7 +15,7 @@ Code:
           (text_content))))
     (annotation_marker)
     (annotation_header)
-    (annotation_marker)))
+    (annotation_close)))
 
 ==================
 Verbatim with multiple content lines
@@ -42,7 +42,7 @@ Code:
           (text_content))))
     (annotation_marker)
     (annotation_header)
-    (annotation_marker)))
+    (annotation_close)))
 
 ==================
 Verbatim without content
@@ -56,7 +56,7 @@ Photo:
     subject: (subject_content)
     (annotation_marker)
     (annotation_header)
-    (annotation_marker)))
+    (annotation_close)))
 
 ==================
 Verbatim with blank line after subject
@@ -76,7 +76,7 @@ Code:
           (text_content))))
     (annotation_marker)
     (annotation_header)
-    (annotation_marker)))
+    (annotation_close)))
 
 ==================
 Verbatim with parameters
@@ -95,7 +95,7 @@ API Response:
           (text_content))))
     (annotation_marker)
     (annotation_header)
-    (annotation_marker)))
+    (annotation_close)))
 
 ==================
 Fullwidth verbatim block
@@ -112,7 +112,7 @@ Table:
     (verbatim_content)
     (annotation_marker)
     (annotation_header)
-    (annotation_marker)))
+    (annotation_close)))
 
 ==================
 Fullwidth with blank line after subject
@@ -131,7 +131,7 @@ Table:
     (verbatim_content)
     (annotation_marker)
     (annotation_header)
-    (annotation_marker)))
+    (annotation_close)))
 
 ==================
 Fullwidth with mixed indent content
@@ -149,7 +149,7 @@ Beta   | 25    | extended
     (verbatim_content)
     (annotation_marker)
     (annotation_header)
-    (annotation_marker)))
+    (annotation_close)))
 
 ==================
 Fullwidth without content
@@ -163,7 +163,7 @@ Empty:
     subject: (subject_content)
     (annotation_marker)
     (annotation_header)
-    (annotation_marker)))
+    (annotation_close)))
 
 ==================
 Verbatim group with two pairs
@@ -190,7 +190,7 @@ Run:
             (text_content)))))
     (annotation_marker)
     (annotation_header)
-    (annotation_marker)))
+    (annotation_close)))
 
 ==================
 Verbatim group with three pairs
@@ -225,7 +225,7 @@ Step three:
             (text_content)))))
     (annotation_marker)
     (annotation_header)
-    (annotation_marker)))
+    (annotation_close)))
 
 ==================
 Verbatim group with blank lines between pairs
@@ -255,7 +255,7 @@ Second:
             (text_content)))))
     (annotation_marker)
     (annotation_header)
-    (annotation_marker)))
+    (annotation_close)))
 
 ==================
 Verbatim group with no content
@@ -272,7 +272,7 @@ Label B:
       subject: (subject_content))
     (annotation_marker)
     (annotation_header)
-    (annotation_marker)))
+    (annotation_close)))
 
 ==================
 Verbatim group mixed content and no content
@@ -302,7 +302,7 @@ Also has content:
             (text_content)))))
     (annotation_marker)
     (annotation_header)
-    (annotation_marker)))
+    (annotation_close)))
 
 ==================
 Subject with trailing whitespace
@@ -321,7 +321,7 @@ Code:
           (text_content))))
     (annotation_marker)
     (annotation_header)
-    (annotation_marker)))
+    (annotation_close)))
 
 ==================
 Verbatim group with trailing whitespace on subjects
@@ -348,7 +348,7 @@ Step two:
             (text_content)))))
     (annotation_marker)
     (annotation_header)
-    (annotation_marker)))
+    (annotation_close)))
 
 ==================
 Fullwidth with many content lines
@@ -368,4 +368,4 @@ Beta   | 25    | second
     (verbatim_content)
     (annotation_marker)
     (annotation_header)
-    (annotation_marker)))
+    (annotation_close)))

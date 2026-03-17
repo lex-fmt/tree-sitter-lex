@@ -47,7 +47,7 @@
  *   0: _indent
  *   1: _dedent
  *   2: _newline
- *   3: annotation_marker
+ *   3: annotation_marker (opening :: at line start)
  *   4: list_marker
  *   5: subject_content
  *   6: _strong_open
@@ -58,6 +58,10 @@
  *  11: verbatim_content
  *  12: _list_start
  *  13: _definition_subject
+ *  14: _pipe_row_start
+ *  15: pipe_delimiter
+ *  16: _table_separator
+ *  17: annotation_close (closing :: mid-line, only inside annotation/verbatim)
  *
  * Flanking validation for emphasis delimiters:
  *   Opening: prev char must not be alphanumeric (WORD class), next must be WORD.
@@ -96,6 +100,7 @@ enum TokenType {
     PIPE_ROW_START,
     PIPE_DELIMITER,
     TABLE_SEPARATOR,
+    ANNOTATION_CLOSE,
 };
 
 // Character class for flanking rule context tracking.
@@ -474,8 +479,8 @@ bool tree_sitter_lex_external_scanner_scan(void *payload, TSLexer *lexer,
     fprintf(stderr, "] pending=%d lookahead='%c'(%d) valid=[",
             scanner->pending_dedents, lexer->lookahead > 31 ? lexer->lookahead : '?',
             lexer->lookahead);
-    const char *names[] = {"IND","DED","NL","AM","LM","SC","SO","SCl","EO","ECl","SB","VC","LS","DS","PRS","PD","TS"};
-    for (int i = 0; i <= 16; i++) {
+    const char *names[] = {"IND","DED","NL","AM","LM","SC","SO","SCl","EO","ECl","SB","VC","LS","DS","PRS","PD","TS","AC"};
+    for (int i = 0; i <= 17; i++) {
         if (valid_symbols[i]) fprintf(stderr, "%s ", names[i]);
     }
     fprintf(stderr, "]\n");
@@ -1045,8 +1050,10 @@ bool tree_sitter_lex_external_scanner_scan(void *payload, TSLexer *lexer,
         return false;
     }
 
-    // Check for mid-line annotation marker (the second ::)
-    if (valid_symbols[ANNOTATION_MARKER] && lexer->lookahead == ':') {
+    // Check for closing :: (annotation_close). Only valid inside annotation
+    // or verbatim grammar rules — never at block level, so :: in prose text
+    // is never intercepted here.
+    if (valid_symbols[ANNOTATION_CLOSE] && lexer->lookahead == ':') {
         lexer->mark_end(lexer);
         lexer->advance(lexer, false);
         if (lexer->lookahead == ':') {
@@ -1057,10 +1064,10 @@ bool tree_sitter_lex_external_scanner_scan(void *payload, TSLexer *lexer,
                 lexer->advance(lexer, false);
                 lexer->mark_end(lexer);
             }
-            lexer->result_symbol = ANNOTATION_MARKER;
+            lexer->result_symbol = ANNOTATION_CLOSE;
             return true;
         }
-        // Single colon — not an annotation marker, don't consume
+        // Single colon — not a closing marker, don't consume
         return false;
     }
 
