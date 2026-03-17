@@ -165,7 +165,7 @@
     },
     "session": {
       "type": "PREC_DYNAMIC",
-      "value": 1,
+      "value": 5,
       "content": {
         "type": "SEQ",
         "members": [
@@ -268,7 +268,7 @@
     },
     "verbatim_block": {
       "type": "PREC_DYNAMIC",
-      "value": 4,
+      "value": 6,
       "content": {
         "type": "SEQ",
         "members": [

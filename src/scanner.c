@@ -74,12 +74,13 @@
 
 #include "tree_sitter/parser.h"
 
+#include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
-#ifdef SCANNER_DEBUG
 #include <stdio.h>
-#endif
 
 #define MAX_INDENT_DEPTH 64
+/// The width of a standard Lex indent level in spaces
 #define INDENT_WIDTH 4
 
 enum TokenType {
@@ -118,6 +119,7 @@ typedef struct {
     bool emitted_eof_newline;
     uint8_t last_char_class;
     int line_indent;       // measured indent of current line (avoids re-measurement after DEDENT)
+    int last_subject_indent; // captured when SUBJECT_CONTENT matches, used by verbatim_block
     bool indent_measured;  // true when line_indent is valid for the current line
     bool in_pipe_row;      // true after PIPE_ROW_START, reset at NEWLINE
 } Scanner;
@@ -139,6 +141,7 @@ void *tree_sitter_lex_external_scanner_create(void) {
     scanner->emitted_eof_newline = false;
     scanner->last_char_class = CHAR_CLASS_NONE;
     scanner->line_indent = 0;
+    scanner->last_subject_indent = 0;
     scanner->indent_measured = false;
     scanner->in_pipe_row = false;
     return scanner;
@@ -163,12 +166,16 @@ unsigned tree_sitter_lex_external_scanner_serialize(void *payload,
     int16_t li = (int16_t)scanner->line_indent;
     memcpy(buffer + offset, &li, 2);
     offset += 2;
+    int16_t lsi = (int16_t)scanner->last_subject_indent;
+    memcpy(buffer + offset, &lsi, 2);
+    offset += 2;
 
     for (int i = 0; i <= scanner->indent_depth; i++) {
         int16_t val = (int16_t)scanner->indent_stack[i];
         memcpy(buffer + offset, &val, 2);
         offset += 2;
     }
+    fprintf(stderr, "SERIALIZE: last_subject_indent=%d, line_indent=%d\n", scanner->last_subject_indent, scanner->line_indent);
 
     return offset;
 }
@@ -186,6 +193,7 @@ void tree_sitter_lex_external_scanner_deserialize(void *payload,
         scanner->emitted_eof_newline = false;
         scanner->last_char_class = CHAR_CLASS_NONE;
         scanner->line_indent = 0;
+        scanner->last_subject_indent = 0;
         scanner->indent_measured = false;
         scanner->in_pipe_row = false;
         return;
@@ -203,6 +211,12 @@ void tree_sitter_lex_external_scanner_deserialize(void *payload,
     memcpy(&li, buffer + offset, 2);
     scanner->line_indent = li;
     offset += 2;
+    int16_t lsi;
+    memcpy(&lsi, buffer + offset, 2);
+    scanner->last_subject_indent = lsi;
+    offset += 2;
+
+    fprintf(stderr, "DESERIALIZE: last_subject_indent=%d, line_indent=%d\n", scanner->last_subject_indent, scanner->line_indent);
 
     for (int i = 0; i <= scanner->indent_depth; i++) {
         int16_t val;
@@ -210,6 +224,7 @@ void tree_sitter_lex_external_scanner_deserialize(void *payload,
         scanner->indent_stack[i] = val;
         offset += 2;
     }
+    fprintf(stderr, "DESERIALIZE: last_subject_indent=%d\n", scanner->last_subject_indent);
 }
 
 /// Check if a character is a digit
@@ -363,6 +378,7 @@ static bool peek_next_line_has_list_marker(TSLexer *lexer, int expected_indent) 
     // lookahead from crossing session boundaries (blank + indent + content
     // + blank pattern) and mistaking numbered sessions for list items.
     bool in_nested = false;
+    bool pending_blank_line = false;
     for (int safety = 0; safety < 1000; safety++) {
         // Consume newline
         if (lexer->lookahead != '\n') return false;
@@ -382,8 +398,11 @@ static bool peek_next_line_has_list_marker(TSLexer *lexer, int expected_indent) 
         // Blank line
         if (lexer->lookahead == '\n') {
             if (!in_nested) {
-                // Blank line at top level terminates the list
-                return false;
+                // Blank line at top level might terminate the list,
+                // BUT it might just precede nested content.
+                // We must check the next content line's indent.
+                pending_blank_line = true;
+                continue;
             }
             // Inside nested content, blank lines can separate nested blocks
             continue;
@@ -392,14 +411,19 @@ static bool peek_next_line_has_list_marker(TSLexer *lexer, int expected_indent) 
 
         // Line at expected indent: check for list marker
         if (next_indent == expected_indent) {
+            // If we had a blank line at the top level, and the next item
+            // is at the same indent, the blank line terminated the list!
+            if (pending_blank_line) return false;
             return try_list_marker(lexer);
         }
 
         // Line at lesser indent: we've left the list context
         if (next_indent < expected_indent) return false;
 
-        // Line at greater indent (nested content): skip line and continue
+        // Line at greater indent (nested content): skip line and continue.
+        // If we had a pending blank line, it's now validated as inside nested content.
         in_nested = true;
+        pending_blank_line = false;
         while (lexer->lookahead != '\n' && !lexer->eof(lexer)) {
             lexer->advance(lexer, false);
         }
@@ -466,25 +490,9 @@ static int classify_pipe_line(TSLexer *lexer) {
 }
 
 bool tree_sitter_lex_external_scanner_scan(void *payload, TSLexer *lexer,
-                                            const bool *valid_symbols) {
+                                           const bool *valid_symbols) {
     Scanner *scanner = (Scanner *)payload;
-
-#ifdef SCANNER_DEBUG
-    fprintf(stderr, "SCAN: at_line_start=%d depth=%d stack=[",
-            scanner->at_line_start, scanner->indent_depth);
-    for (int i = 0; i <= scanner->indent_depth; i++) {
-        fprintf(stderr, "%d%s", scanner->indent_stack[i],
-                i < scanner->indent_depth ? "," : "");
-    }
-    fprintf(stderr, "] pending=%d lookahead='%c'(%d) valid=[",
-            scanner->pending_dedents, lexer->lookahead > 31 ? lexer->lookahead : '?',
-            lexer->lookahead);
-    const char *names[] = {"IND","DED","NL","AM","LM","SC","SO","SCl","EO","ECl","SB","VC","LS","DS","PRS","PD","TS","AC"};
-    for (int i = 0; i <= 17; i++) {
-        if (valid_symbols[i]) fprintf(stderr, "%s ", names[i]);
-    }
-    fprintf(stderr, "]\n");
-#endif
+    uint32_t true_start_column = lexer->get_column(lexer);
 
     // Emit pending DEDENT tokens
     if (scanner->pending_dedents > 0 && valid_symbols[DEDENT]) {
@@ -509,11 +517,22 @@ bool tree_sitter_lex_external_scanner_scan(void *payload, TSLexer *lexer,
                 } else {
                     indent++;
                 }
-                lexer->advance(lexer, true);
+                lexer->advance(lexer, true); // skip
             }
             scanner->line_indent = indent;
             scanner->indent_measured = true;
-        }
+           fprintf(stderr, "SCAN_DEBUG [indent=%d, cur_indent=%d]: ", indent, scanner->indent_stack[scanner->indent_depth]);
+        if (valid_symbols[INDENT]) fprintf(stderr, "INDENT ");
+        if (valid_symbols[DEDENT]) fprintf(stderr, "DEDENT ");
+        if (valid_symbols[NEWLINE]) fprintf(stderr, "NEWLINE ");
+        if (valid_symbols[SUBJECT_CONTENT]) fprintf(stderr, "SUBJECT_CONTENT ");
+        if (valid_symbols[VERBATIM_CONTENT]) fprintf(stderr, "VERBATIM_CONTENT ");
+        if (valid_symbols[PIPE_ROW_START]) fprintf(stderr, "PIPE_ROW_START ");
+        if (valid_symbols[SESSION_BREAK]) fprintf(stderr, "SESSION_BREAK ");
+        if (valid_symbols[ANNOTATION_MARKER]) fprintf(stderr, "ANNOTATION_MARKER ");
+        if (valid_symbols[LIST_MARKER]) fprintf(stderr, "LIST_MARKER ");
+        fprintf(stderr, "\n");
+       }
 
         // Blank line — check for session break or emit NEWLINE
         if (lexer->lookahead == '\n') {
@@ -647,11 +666,10 @@ bool tree_sitter_lex_external_scanner_scan(void *payload, TSLexer *lexer,
         // Fullwidth verbatim content: indent 1-3 (sub-INDENT_WIDTH) is never
         // valid normal lex indentation. When VERBATIM_CONTENT is valid (the
         // grammar is exploring the fullwidth branch of verbatim_block), consume
-        // all lines until :: at subject indent level as an opaque token.
+        // all lines until :: at subject indent level as an opaque multi-line token.
         // This MUST run before indent handling to prevent spurious DEDENT/INDENT.
-        if (indent > 0 && indent < INDENT_WIDTH &&
-            valid_symbols[VERBATIM_CONTENT]) {
-            int subject_indent = current_indent;
+        if (indent > 0 && indent < INDENT_WIDTH && valid_symbols[VERBATIM_CONTENT]) {
+            int subject_indent = scanner->last_subject_indent;
 
             // Consume the rest of the current line
             while (lexer->lookahead != '\n' && !lexer->eof(lexer)) {
@@ -661,6 +679,8 @@ bool tree_sitter_lex_external_scanner_scan(void *payload, TSLexer *lexer,
                 lexer->advance(lexer, false); // consume \n
             }
             lexer->mark_end(lexer);
+
+            bool found_closing = false;
 
             // Consume subsequent lines until closing :: at subject indent
             while (!lexer->eof(lexer)) {
@@ -673,8 +693,6 @@ bool tree_sitter_lex_external_scanner_scan(void *payload, TSLexer *lexer,
                         line_indent++;
                     }
                     // Consume indent as part of the VERBATIM_CONTENT token.
-                    // Must use skip=false to avoid resetting token_start_position,
-                    // which would discard all previously consumed content lines.
                     lexer->advance(lexer, false);
                 }
 
@@ -691,11 +709,11 @@ bool tree_sitter_lex_external_scanner_scan(void *payload, TSLexer *lexer,
                 if (line_indent == subject_indent && lexer->lookahead == ':') {
                     lexer->advance(lexer, false);
                     if (lexer->lookahead == ':') {
-                        // Found closing annotation — stop.
-                        // mark_end is after the last content line's \n.
+                        // Found closing annotation — stop opaque content.
+                        found_closing = true;
                         break;
                     }
-                    // Single colon at subject indent — still content
+                    // False positive (single colon) — still content
                     consume_rest_of_line(lexer);
                     if (!lexer->eof(lexer)) {
                         lexer->advance(lexer, false); // \n
@@ -712,6 +730,13 @@ bool tree_sitter_lex_external_scanner_scan(void *payload, TSLexer *lexer,
                 lexer->mark_end(lexer);
             }
 
+            if (!found_closing) {
+                // We reached EOF without finding the :: annotation.
+                // This means we are likely inside a rogue GLR fork with an obsolete subject_indent!
+                // Failing here culls the rogue fork cleanly without poisoning the rest of the file.
+                return false;
+            }
+
             scanner->at_line_start = true;
             scanner->indent_measured = false;
             scanner->last_char_class = CHAR_CLASS_NONE;
@@ -721,7 +746,12 @@ bool tree_sitter_lex_external_scanner_scan(void *payload, TSLexer *lexer,
 
         // Handle indentation changes
         if (indent > current_indent) {
-            if (valid_symbols[INDENT]) {
+            // Verbatim closing annotations can be deeply indented relative to
+            // the grammar's current context if the outer list ended prematurely.
+            // Prioritize them over INDENT to close the verbatim block!
+            if (valid_symbols[ANNOTATION_MARKER] && lexer->lookahead == ':') {
+                // Let it fall through to the annotation marker detection
+            } else if (valid_symbols[INDENT]) {
                 scanner->indent_depth++;
                 scanner->indent_stack[scanner->indent_depth] = indent;
                 lexer->result_symbol = INDENT;
@@ -753,6 +783,7 @@ bool tree_sitter_lex_external_scanner_scan(void *payload, TSLexer *lexer,
 
         // After handling indentation, try to detect line-start tokens.
         lexer->mark_end(lexer);
+        true_start_column = lexer->get_column(lexer);
 
         // Save the first content char for context tracking. If we return
         // false later, the grammar will consume from here, and this char's
@@ -859,11 +890,13 @@ bool tree_sitter_lex_external_scanner_scan(void *payload, TSLexer *lexer,
                 lexer->mark_end(lexer);  // mark at EOL for full line
                 if (valid_symbols[DEFINITION_SUBJECT]) {
                     if (peek_next_line_has_indent(lexer, scanner->line_indent)) {
+                        scanner->last_subject_indent = scanner->line_indent;
                         lexer->result_symbol = DEFINITION_SUBJECT;
                         return true;
                     }
                 }
                 if (valid_symbols[SUBJECT_CONTENT]) {
+                    scanner->last_subject_indent = scanner->line_indent;
                     lexer->result_symbol = SUBJECT_CONTENT;
                     return true;
                 }
@@ -922,31 +955,49 @@ bool tree_sitter_lex_external_scanner_scan(void *payload, TSLexer *lexer,
         }
 
         // Try subject content: entire line ending with : (ignoring trailing whitespace)
+        // Must NOT start with :: (annotation marker) to avoid shadowing block annotations.
         if (valid_symbols[SUBJECT_CONTENT] || valid_symbols[DEFINITION_SUBJECT]) {
-            int32_t last_nonws = 0;
-            while (lexer->lookahead != '\n' && !lexer->eof(lexer)) {
-                if (lexer->lookahead != ' ' && lexer->lookahead != '\t') {
-                    last_nonws = lexer->lookahead;
-                }
+            bool starts_with_annotation = false;
+            // The lexer position here is after potentially scanning a list marker (try_list_marker),
+            // but if we are checking for a bare subject line, we should verify the start of the line.
+            // However, list markers explicitly block subject content if they match.
+            // If try_list_marker returned false, we are back at mark_end (which is line_start).
+            // Let's peek for ::
+            if (lexer->lookahead == ':') {
                 lexer->advance(lexer, false);
+                if (lexer->lookahead == ':') {
+                    starts_with_annotation = true;
+                }
             }
-            if (last_nonws == ':') {
-                lexer->mark_end(lexer);
+            // Reset position to scan to end of line
+            lexer->mark_end(lexer);
 
-                // If DEFINITION_SUBJECT is valid, peek ahead for indent
-                if (valid_symbols[DEFINITION_SUBJECT]) {
-                    if (peek_next_line_has_indent(lexer, scanner->line_indent)) {
-                        lexer->result_symbol = DEFINITION_SUBJECT;
+            if (!starts_with_annotation) {
+                int32_t last_nonws = 0;
+                while (lexer->lookahead != '\n' && !lexer->eof(lexer)) {
+                    if (lexer->lookahead != ' ' && lexer->lookahead != '\t') {
+                        last_nonws = lexer->lookahead;
+                    }
+                    lexer->advance(lexer, false);
+                }
+                if (last_nonws == ':') {
+                    lexer->mark_end(lexer);
+
+                    // If DEFINITION_SUBJECT is valid, peek ahead for indent
+                    if (valid_symbols[DEFINITION_SUBJECT]) {
+                        if (peek_next_line_has_indent(lexer, scanner->line_indent)) {
+                            lexer->result_symbol = DEFINITION_SUBJECT;
+                            return true;
+                        }
+                    }
+
+                    if (valid_symbols[SUBJECT_CONTENT]) {
+                        lexer->result_symbol = SUBJECT_CONTENT;
                         return true;
                     }
                 }
-
-                if (valid_symbols[SUBJECT_CONTENT]) {
-                    lexer->result_symbol = SUBJECT_CONTENT;
-                    return true;
-                }
             }
-            // Line doesn't end with : — return false, position resets to
+            // Line doesn't end with : or starts with :: — return false, position resets to
             // mark_end (line start). Set last_char_class for the grammar
             // token that will be consumed at that position.
             scanner->last_char_class = classify_char(line_start_char);
@@ -1022,31 +1073,50 @@ bool tree_sitter_lex_external_scanner_scan(void *payload, TSLexer *lexer,
     }
 
     // Try subject content: entire line ending with : (ignoring trailing whitespace)
+    // Must NOT start with :: (annotation marker) to avoid shadowing block annotations.
     if (valid_symbols[SUBJECT_CONTENT] || valid_symbols[DEFINITION_SUBJECT]) {
         lexer->mark_end(lexer);
-        int32_t last_nonws = 0;
-        while (lexer->lookahead != '\n' && !lexer->eof(lexer)) {
-            if (lexer->lookahead != ' ' && lexer->lookahead != '\t') {
-                last_nonws = lexer->lookahead;
-            }
+        
+        bool starts_with_annotation = false;
+        if (lexer->lookahead == ':') {
             lexer->advance(lexer, false);
+            if (lexer->lookahead == ':') {
+                starts_with_annotation = true;
+            }
         }
-        if (last_nonws == ':') {
-            lexer->mark_end(lexer);
+        
+        // Reset position to scan to end of line
+        lexer->mark_end(lexer);
+        
+        if (!starts_with_annotation) {
+            int32_t last_nonws = 0;
+            while (lexer->lookahead != '\n' && !lexer->eof(lexer)) {
+                if (lexer->lookahead != ' ' && lexer->lookahead != '\t') {
+                    last_nonws = lexer->lookahead;
+                }
+                lexer->advance(lexer, false);
+            }
+            if (last_nonws == ':') {
+                lexer->mark_end(lexer);
+                // Remove the debug print as we don't need it
 
-            if (valid_symbols[DEFINITION_SUBJECT]) {
-                if (peek_next_line_has_indent(lexer, scanner->line_indent)) {
-                    lexer->result_symbol = DEFINITION_SUBJECT;
+                if (valid_symbols[DEFINITION_SUBJECT]) {
+                    if (peek_next_line_has_indent(lexer, scanner->line_indent)) {
+                        scanner->last_subject_indent = scanner->line_indent;
+                        lexer->result_symbol = DEFINITION_SUBJECT;
+                        return true;
+                    }
+                }
+
+                if (valid_symbols[SUBJECT_CONTENT]) {
+                    scanner->last_subject_indent = scanner->line_indent;
+                    lexer->result_symbol = SUBJECT_CONTENT;
                     return true;
                 }
             }
-
-            if (valid_symbols[SUBJECT_CONTENT]) {
-                lexer->result_symbol = SUBJECT_CONTENT;
-                return true;
-            }
         }
-        // Line doesn't end with : — return false, position resets
+        // Line doesn't end with : or starts with :: — return false, position resets
+        fprintf(stderr, "SUBJECT NO MATCH\n");
         return false;
     }
 

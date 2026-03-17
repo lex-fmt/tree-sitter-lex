@@ -166,7 +166,7 @@ module.exports = grammar({
     // paragraph, fixing nested session nesting.
     session: ($) =>
       prec.dynamic(
-        1,
+        5,
         seq(
           field("title", alias($._session_title, $.line_content)),
           $._newline,
@@ -198,7 +198,7 @@ module.exports = grammar({
     // directly in verbatim_block; additional pairs are verbatim_group_item nodes.
     verbatim_block: ($) =>
       prec.dynamic(
-        4,
+        6,
         seq(
           field(
             "subject",
