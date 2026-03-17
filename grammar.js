@@ -108,9 +108,13 @@ module.exports = grammar({
     // document_title is ONLY in this position — it cannot appear mid-document.
     // GLR resolves the fork: if blank+indent follows → session wins via
     // _session_break; if just blank → document_title wins via dynamic prec.
+    // document_title requires at least one _block after it. Without this,
+    // a single-line document gets misclassified as a title instead of a
+    // paragraph (the title fork has prec.dynamic(2) and wins over the
+    // repeat1(_block) alternative even when there's no actual content).
     document: ($) =>
       choice(
-        seq($.document_title, repeat($._block)),
+        seq($.document_title, repeat1($._block)),
         repeat1($._block),
       ),
 

@@ -13,7 +13,7 @@
               "name": "document_title"
             },
             {
-              "type": "REPEAT",
+              "type": "REPEAT1",
               "content": {
                 "type": "SYMBOL",
                 "name": "_block"
