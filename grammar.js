@@ -97,6 +97,7 @@ module.exports = grammar({
     [$.verbatim_block, $.definition],
     // text_content: session title vs line_content in paragraph
     [$._session_title, $.line_content],
+    [$.verbatim_block, $._session_title, $.line_content],
     // blank lines between verbatim groups: body's repeat vs group_item's repeat
     [$.verbatim_group_item],
   ],
@@ -224,6 +225,32 @@ module.exports = grammar({
                 optional(seq($._indent, repeat1($._block), $._dedent)),
               ),
               seq(repeat($.blank_line), $.verbatim_content),
+            ),
+            repeat($.verbatim_group_item),
+            $.annotation_marker,
+            $.annotation_header,
+            $.annotation_close,
+            $._newline,
+          ),
+        ),
+        prec.dynamic(
+          6,
+          seq(
+            field(
+              "subject",
+              $.subject_content,
+            ),
+            $._newline,
+            choice(
+              seq($._session_break, repeat1($._block), $._dedent),
+              seq(
+                repeat1($.blank_line),
+                optional(seq($._indent, repeat1($._block), $._dedent)),
+              ),
+              seq(
+                choice(repeat1($.blank_line), seq($._session_break, $._dedent)),
+                $.verbatim_content
+              ),
             ),
             repeat($.verbatim_group_item),
             $.annotation_marker,

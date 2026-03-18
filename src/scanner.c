@@ -731,12 +731,10 @@ bool tree_sitter_lex_external_scanner_scan(void *payload, TSLexer *lexer,
                     scanner->indent_stack[scanner->indent_depth];
                 if (next_indent > current_indent) {
                     // Fullwidth suppression: if the indent increase is
-                    // sub-INDENT_WIDTH (1-3 spaces) and VERBATIM_CONTENT
-                    // is valid, this is fullwidth verbatim content, not a
-                    // session break. Emit NEWLINE for just the blank line
-                    // so the grammar's fullwidth branch can match.
-                    if (next_indent < INDENT_WIDTH &&
-                        valid_symbols[VERBATIM_CONTENT]) {
+                    // sub-INDENT_WIDTH (1-3 spaces) this is fullwidth verbatim
+                    // content, not a session break. Emit NEWLINE for just the 
+                    // blank line so the grammar's fullwidth branch can match.
+                    if (next_indent < current_indent + INDENT_WIDTH) {
                         lexer->result_symbol = NEWLINE;
                         scanner->at_line_start = true;
                         scanner->indent_measured = false;
