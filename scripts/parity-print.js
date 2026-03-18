@@ -207,10 +207,15 @@ function printVerbatimChild(node, depth, wallCol) {
       // Split into lines and print each as a quoted VerbatimLine.
       const rawText = decodeXML(node.text || "");
       const lines = rawText.split("\n");
+      const blockScol = parseInt(node.attrs.scol || "0", 10);
       for (let i = 0; i < lines.length; i++) {
         // Skip empty trailing element from final \n split
         if (i === lines.length - 1 && lines[i] === "") continue;
-        console.log(`${ind(depth)}"${lines[i]}"`);
+        let line = lines[i];
+        if (i > 0) {
+          line = stripWall(line, blockScol, "0");
+        }
+        console.log(`${ind(depth)}"${line}"`);
       }
       break;
     }
@@ -223,6 +228,9 @@ function printVerbatimChild(node, depth, wallCol) {
         ? leafText(subjectNode).replace(/:\s*$/, "").trimEnd()
         : "";
       console.log(`${ind(depth)}VerbatimGroupItem "${subject}"`);
+      
+      let expectedNextRow = subjectNode ? parseInt(subjectNode.attrs.erow || "0", 10) + 1 : -1;
+
       for (const child of node.children) {
         if (child.attrs.field === "subject") continue;
         if (
@@ -230,7 +238,18 @@ function printVerbatimChild(node, depth, wallCol) {
           child.tag === "annotation_header"
         )
           continue;
+          
+        if (expectedNextRow !== -1 && child.tag !== "blank_line") {
+           const childSrow = parseInt(child.attrs.srow || `${expectedNextRow}`, 10);
+           while (expectedNextRow < childSrow) {
+             console.log(`${ind(depth + 1)}""`);
+             expectedNextRow++;
+           }
+        }
+
         printVerbatimChild(child, depth + 1, wallCol);
+        
+        expectedNextRow = parseInt(child.attrs.erow || "0", 10) + 1;
       }
       break;
     }
@@ -383,6 +402,9 @@ function printParity(node, depth) {
         : "";
       console.log(`${ind(depth)}VerbatimBlock "${subject}"`);
       const wallCol = detectWallCol(node);
+
+      let expectedNextRow = subjectNode ? parseInt(subjectNode.attrs.erow || "0", 10) + 1 : -1;
+
       for (const child of node.children) {
         if (child.attrs.field === "subject") continue;
         if (
@@ -390,7 +412,18 @@ function printParity(node, depth) {
           child.tag === "annotation_header"
         )
           continue;
+
+        if (expectedNextRow !== -1 && child.tag !== "blank_line") {
+           const childSrow = parseInt(child.attrs.srow || `${expectedNextRow}`, 10);
+           while (expectedNextRow < childSrow) {
+             console.log(`${ind(depth + 1)}""`);
+             expectedNextRow++;
+           }
+        }
+
         printVerbatimChild(child, depth + 1, wallCol);
+
+        expectedNextRow = parseInt(child.attrs.erow || "0", 10) + 1;
       }
       break;
     }
