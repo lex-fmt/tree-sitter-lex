@@ -77,7 +77,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
 
 #define MAX_INDENT_DEPTH 64
 /// The width of a standard Lex indent level in spaces
@@ -102,6 +101,7 @@ enum TokenType {
     PIPE_DELIMITER,
     TABLE_SEPARATOR,
     ANNOTATION_CLOSE,
+    SESSION_MARKER,
 };
 
 // Character class for flanking rule context tracking.
@@ -175,7 +175,7 @@ unsigned tree_sitter_lex_external_scanner_serialize(void *payload,
         memcpy(buffer + offset, &val, 2);
         offset += 2;
     }
-    fprintf(stderr, "SERIALIZE: last_subject_indent=%d, line_indent=%d\n", scanner->last_subject_indent, scanner->line_indent);
+
 
     return offset;
 }
@@ -216,7 +216,7 @@ void tree_sitter_lex_external_scanner_deserialize(void *payload,
     scanner->last_subject_indent = lsi;
     offset += 2;
 
-    fprintf(stderr, "DESERIALIZE: last_subject_indent=%d, line_indent=%d\n", scanner->last_subject_indent, scanner->line_indent);
+
 
     for (int i = 0; i <= scanner->indent_depth; i++) {
         int16_t val;
@@ -224,7 +224,7 @@ void tree_sitter_lex_external_scanner_deserialize(void *payload,
         scanner->indent_stack[i] = val;
         offset += 2;
     }
-    fprintf(stderr, "DESERIALIZE: last_subject_indent=%d\n", scanner->last_subject_indent);
+
 }
 
 /// Check if a character is a digit
@@ -433,10 +433,12 @@ static bool peek_next_line_has_list_marker(TSLexer *lexer, int expected_indent) 
     return false;
 }
 
-/// Peek ahead to check if the next line has increased indentation.
+/// Peek ahead to check if the next line has increased indentation or
+/// starts with :: (verbatim marker form).
 /// Call AFTER mark_end has been set for the current subject content.
 /// The lexer should be positioned at the \n at end of the subject line.
-/// Returns true if the next line's indent is greater than current_indent.
+/// Returns true if the next line's indent is greater than current_indent,
+/// or if it starts with :: at the same indent (verbatim marker form).
 static bool peek_next_line_has_indent(TSLexer *lexer, int current_indent) {
     // We should be at end of line (\n) or EOF
     if (lexer->eof(lexer)) return false;
@@ -459,7 +461,145 @@ static bool peek_next_line_has_indent(TSLexer *lexer, int current_indent) {
     // Must not be a blank line or EOF
     if (lexer->lookahead == '\n' || lexer->eof(lexer)) return false;
 
-    return next_indent > current_indent;
+    // Increased indent → definition/verbatim content follows
+    if (next_indent > current_indent) return true;
+
+    // Same indent + starts with :: → verbatim marker form (closing annotation
+    // at the same level as the subject, no content between them)
+    if (next_indent == current_indent && lexer->lookahead == ':') {
+        lexer->advance(lexer, false);
+        if (lexer->lookahead == ':') return true;
+    }
+
+    return false;
+}
+
+/// Combined check for list-marker lines: determines if this marker starts
+/// a list (2+ items) or is a session title (followed by blank + indent).
+/// Returns: -1 = session pattern (suppress list token entirely),
+///           0 = no list continuation found (emit LIST_MARKER),
+///           1 = list continuation confirmed (emit LIST_START).
+/// Call AFTER mark_end has been set for the list marker.
+/// Advances past mark_end (tree-sitter resets on token accept/reject).
+static int check_list_or_session(TSLexer *lexer, int expected_indent) {
+    // Consume rest of current line (content after the list marker)
+    while (lexer->lookahead != '\n' && !lexer->eof(lexer)) {
+        lexer->advance(lexer, false);
+    }
+    if (lexer->eof(lexer)) return 0;
+
+    // Consume the \n at end of current line
+    lexer->advance(lexer, false);
+
+    // Check if the immediate next line is blank AND the line after has
+    // increased indent — this is the session pattern (blank + indent).
+    // In lex, list items are NEVER separated by blank lines (blank
+    // terminates the list). A blank after a list-marker line followed
+    // by increased indent is always a session title, not a list item.
+    if (lexer->lookahead == '\n') {
+        // Skip blank lines
+        while (lexer->lookahead == '\n') {
+            lexer->advance(lexer, false);
+        }
+        if (lexer->eof(lexer)) return 0;  // blanks then EOF = not a session
+
+        // Measure indent of first non-blank line
+        int post_blank_indent = 0;
+        while (lexer->lookahead == ' ' || lexer->lookahead == '\t') {
+            if (lexer->lookahead == '\t')
+                post_blank_indent += INDENT_WIDTH;
+            else
+                post_blank_indent++;
+            lexer->advance(lexer, false);
+        }
+
+        // Session pattern: non-blank content at increased indent
+        if (post_blank_indent > expected_indent &&
+            lexer->lookahead != '\n' && !lexer->eof(lexer)) {
+            return -1;
+        }
+        // Blank + no indent increase = not a session (e.g., dialog line
+        // followed by paragraph). Return 0 (no list continuation either,
+        // since blank terminated any potential list).
+        return 0;
+    }
+
+    // Not blank — continue with the deep lookahead for list start.
+    // This is the same logic as peek_next_line_has_list_marker but
+    // starting from the already-consumed position (we're at the first
+    // char of the next line).
+
+    // Measure indent of this (next) line
+    int next_indent = 0;
+    while (lexer->lookahead == ' ' || lexer->lookahead == '\t') {
+        if (lexer->lookahead == '\t') {
+            next_indent += INDENT_WIDTH;
+        } else {
+            next_indent++;
+        }
+        lexer->advance(lexer, false);
+    }
+
+    if (lexer->eof(lexer)) return 0;
+
+    // Line at expected indent: check for list marker (confirms 2+ items)
+    if (next_indent == expected_indent) {
+        if (lexer->lookahead != '\n' && try_list_marker(lexer)) return 1;
+        return 0;
+    }
+
+    // Line at lesser indent: left the list context
+    if (next_indent < expected_indent) return 0;
+
+    // Line at greater indent (nested content): deep scan through lines
+    // using the same logic as peek_next_line_has_list_marker.
+    bool in_nested = true;
+    bool pending_blank_line = false;
+    // Skip this first nested line
+    while (lexer->lookahead != '\n' && !lexer->eof(lexer)) {
+        lexer->advance(lexer, false);
+    }
+    if (lexer->eof(lexer)) return 0;
+
+    for (int safety = 0; safety < 1000; safety++) {
+        if (lexer->lookahead != '\n') return 0;
+        lexer->advance(lexer, false);
+
+        next_indent = 0;
+        while (lexer->lookahead == ' ' || lexer->lookahead == '\t') {
+            if (lexer->lookahead == '\t')
+                next_indent += INDENT_WIDTH;
+            else
+                next_indent++;
+            lexer->advance(lexer, false);
+        }
+
+        // Blank line
+        if (lexer->lookahead == '\n') {
+            if (!in_nested) {
+                pending_blank_line = true;
+                continue;
+            }
+            continue;
+        }
+        if (lexer->eof(lexer)) return 0;
+
+        if (next_indent == expected_indent) {
+            if (pending_blank_line) return 0;
+            if (try_list_marker(lexer)) return 1;
+            return 0;
+        }
+        if (next_indent < expected_indent) return 0;
+
+        in_nested = true;
+        pending_blank_line = false;
+        while (lexer->lookahead != '\n' && !lexer->eof(lexer)) {
+            lexer->advance(lexer, false);
+        }
+        if (lexer->eof(lexer)) return 0;
+    }
+
+    return 0;
 }
 
 /// Try to detect a pipe row at the current position. The lexer should be
@@ -521,17 +661,6 @@ bool tree_sitter_lex_external_scanner_scan(void *payload, TSLexer *lexer,
             }
             scanner->line_indent = indent;
             scanner->indent_measured = true;
-           fprintf(stderr, "SCAN_DEBUG [indent=%d, cur_indent=%d]: ", indent, scanner->indent_stack[scanner->indent_depth]);
-        if (valid_symbols[INDENT]) fprintf(stderr, "INDENT ");
-        if (valid_symbols[DEDENT]) fprintf(stderr, "DEDENT ");
-        if (valid_symbols[NEWLINE]) fprintf(stderr, "NEWLINE ");
-        if (valid_symbols[SUBJECT_CONTENT]) fprintf(stderr, "SUBJECT_CONTENT ");
-        if (valid_symbols[VERBATIM_CONTENT]) fprintf(stderr, "VERBATIM_CONTENT ");
-        if (valid_symbols[PIPE_ROW_START]) fprintf(stderr, "PIPE_ROW_START ");
-        if (valid_symbols[SESSION_BREAK]) fprintf(stderr, "SESSION_BREAK ");
-        if (valid_symbols[ANNOTATION_MARKER]) fprintf(stderr, "ANNOTATION_MARKER ");
-        if (valid_symbols[LIST_MARKER]) fprintf(stderr, "LIST_MARKER ");
-        fprintf(stderr, "\n");
        }
 
         // Blank line — check for session break or emit NEWLINE
@@ -931,20 +1060,26 @@ bool tree_sitter_lex_external_scanner_scan(void *payload, TSLexer *lexer,
             if (try_list_marker(lexer)) {
                 lexer->mark_end(lexer);
 
-                // If LIST_START is valid, peek ahead to check if the next
-                // line also starts with a list marker at the same indent.
-                // If yes, emit LIST_START (paragraph can't absorb it).
-                if (valid_symbols[LIST_START]) {
-                    if (peek_next_line_has_list_marker(lexer, scanner->line_indent)) {
-                        lexer->result_symbol = LIST_START;
-                        scanner->last_char_class = CHAR_CLASS_WHITESPACE;
-                        return true;
-                    }
+                // Combined check: session pattern (-1), list start (1), or neither (0).
+                int result = check_list_or_session(lexer, scanner->line_indent);
+
+                if (result == -1 && valid_symbols[SESSION_MARKER]) {
+                    // Session pattern (blank after line) — emit SESSION_MARKER
+                    // which only _session_title accepts, eliminating GLR
+                    // competition from dialog_line and _list_start_item.
+                    lexer->result_symbol = SESSION_MARKER;
+                    scanner->last_char_class = CHAR_CLASS_WHITESPACE;
+                    return true;
+                }
+
+                if (result == 1 && valid_symbols[LIST_START]) {
+                    lexer->result_symbol = LIST_START;
+                    scanner->last_char_class = CHAR_CLASS_WHITESPACE;
+                    return true;
                 }
 
                 if (valid_symbols[LIST_MARKER]) {
                     lexer->result_symbol = LIST_MARKER;
-                    // Marker ends with a space — set class for emphasis flanking
                     scanner->last_char_class = CHAR_CLASS_WHITESPACE;
                     return true;
                 }
@@ -1055,12 +1190,22 @@ bool tree_sitter_lex_external_scanner_scan(void *payload, TSLexer *lexer,
         if (try_list_marker(lexer)) {
             lexer->mark_end(lexer);
 
-            if (valid_symbols[LIST_START]) {
-                if (peek_next_line_has_list_marker(lexer, scanner->line_indent)) {
-                    lexer->result_symbol = LIST_START;
-                    scanner->last_char_class = CHAR_CLASS_WHITESPACE;
-                    return true;
-                }
+            // Use the current indent from the stack, not scanner->line_indent
+            // which may be stale after _session_break (it records the blank
+            // line's indent, not the content line's indent).
+            int current_indent = scanner->indent_stack[scanner->indent_depth];
+            int result = check_list_or_session(lexer, current_indent);
+
+            if (result == -1 && valid_symbols[SESSION_MARKER]) {
+                lexer->result_symbol = SESSION_MARKER;
+                scanner->last_char_class = CHAR_CLASS_WHITESPACE;
+                return true;
+            }
+
+            if (result == 1 && valid_symbols[LIST_START]) {
+                lexer->result_symbol = LIST_START;
+                scanner->last_char_class = CHAR_CLASS_WHITESPACE;
+                return true;
             }
 
             if (valid_symbols[LIST_MARKER]) {
@@ -1100,23 +1245,27 @@ bool tree_sitter_lex_external_scanner_scan(void *payload, TSLexer *lexer,
                 lexer->mark_end(lexer);
                 // Remove the debug print as we don't need it
 
+                // Use indent stack (not stale line_indent) for the same
+                // reason as the list marker check — after _session_break,
+                // line_indent holds the blank line's indent (0) not the
+                // content line's indent.
+                int subject_indent = scanner->indent_stack[scanner->indent_depth];
                 if (valid_symbols[DEFINITION_SUBJECT]) {
-                    if (peek_next_line_has_indent(lexer, scanner->line_indent)) {
-                        scanner->last_subject_indent = scanner->line_indent;
+                    if (peek_next_line_has_indent(lexer, subject_indent)) {
+                        scanner->last_subject_indent = subject_indent;
                         lexer->result_symbol = DEFINITION_SUBJECT;
                         return true;
                     }
                 }
 
                 if (valid_symbols[SUBJECT_CONTENT]) {
-                    scanner->last_subject_indent = scanner->line_indent;
+                    scanner->last_subject_indent = subject_indent;
                     lexer->result_symbol = SUBJECT_CONTENT;
                     return true;
                 }
             }
         }
         // Line doesn't end with : or starts with :: — return false, position resets
-        fprintf(stderr, "SUBJECT NO MATCH\n");
         return false;
     }
 

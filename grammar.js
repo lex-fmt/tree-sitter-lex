@@ -76,6 +76,7 @@ module.exports = grammar({
     $.pipe_delimiter, // subsequent | inside an active pipe row
     $._table_separator, // full separator line: |---|---|
     $.annotation_close, // closing ":: " mid-line (only valid inside annotation/verbatim rules)
+    $._session_marker, // list_marker when next line is blank (session title, not list/dialog)
   ],
 
   extras: (_$) => [],
@@ -90,8 +91,6 @@ module.exports = grammar({
     // blank_line after dedent: part of list_item's trailing blanks or next block
     [$.list_item],
     [$._list_start_item],
-    // subject_content: verbatim vs line_content vs session title
-    [$.verbatim_block, $.line_content, $._session_title],
     // _definition_subject: verbatim vs definition vs session title
     [$.verbatim_block, $.definition, $._session_title],
     // verbatim_block shares structure with definition
@@ -107,9 +106,13 @@ module.exports = grammar({
     // document_title is ONLY in this position — it cannot appear mid-document.
     // GLR resolves the fork: if blank+indent follows → session wins via
     // _session_break; if just blank → document_title wins via dynamic prec.
+    // document_title requires at least one _block after it. Without this,
+    // a single-line document gets misclassified as a title instead of a
+    // paragraph (the title fork has prec.dynamic(2) and wins over the
+    // repeat1(_block) alternative even when there's no actual content).
     document: ($) =>
       choice(
-        seq($.document_title, repeat($._block)),
+        seq($.document_title, repeat1($._block)),
         repeat1($._block),
       ),
 
@@ -182,7 +185,11 @@ module.exports = grammar({
     _session_title: ($) =>
       choice(
         seq(
-          choice(alias($._list_start, $.list_marker), $.list_marker),
+          choice(
+            alias($._list_start, $.list_marker),
+            alias($._session_marker, $.list_marker),
+            $.list_marker,
+          ),
           optional($.text_content),
         ),
         choice(
@@ -196,35 +203,34 @@ module.exports = grammar({
     // Verbatim blocks can contain multiple subject/content pairs (groups)
     // sharing a single closing annotation. The first subject/content lives
     // directly in verbatim_block; additional pairs are verbatim_group_item nodes.
+    // Two-prec verbatim: _definition_subject at prec 6 (scanner confirms
+    // indent/:: follows, no false positives), plain subject_content at prec 1
+    // (for blank+indent case only). The low prec prevents subject_content from
+    // winning GLR over paragraph/session when there's no closing annotation.
     verbatim_block: ($) =>
-      prec.dynamic(
-        6,
-        seq(
-          field(
-            "subject",
-            choice(
+      choice(
+        prec.dynamic(
+          6,
+          seq(
+            field(
+              "subject",
               alias($._definition_subject, $.subject_content),
-              $.subject_content,
             ),
-          ),
-          $._newline,
-          choice(
-            // Blank line(s) + indent: scanner emits _session_break
-            seq($._session_break, repeat1($._block), $._dedent),
-            // No blank line, direct indent (or no content at all)
-            seq(
-              repeat($.blank_line),
-              optional(seq($._indent, repeat1($._block), $._dedent)),
+            $._newline,
+            choice(
+              seq($._session_break, repeat1($._block), $._dedent),
+              seq(
+                repeat($.blank_line),
+                optional(seq($._indent, repeat1($._block), $._dedent)),
+              ),
+              seq(repeat($.blank_line), $.verbatim_content),
             ),
-            // Fullwidth: content at column 1 (sub-indent-width), scanner
-            // emits an opaque multi-line verbatim_content token
-            seq(repeat($.blank_line), $.verbatim_content),
+            repeat($.verbatim_group_item),
+            $.annotation_marker,
+            $.annotation_header,
+            $.annotation_close,
+            $._newline,
           ),
-          repeat($.verbatim_group_item),
-          $.annotation_marker,
-          $.annotation_header,
-          $.annotation_close,
-          $._newline,
         ),
       ),
 
