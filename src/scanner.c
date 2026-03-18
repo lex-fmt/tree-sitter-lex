@@ -340,14 +340,23 @@ static void consume_rest_of_line(TSLexer *lexer) {
     }
 }
 
-/// Scan ahead (without marking) to check if a matching delimiter exists on
+/// Scan ahead (without marking) to check if a valid matching closer exists on
 /// the rest of the current line. Used to avoid emitting _strong_open or
 /// _emphasis_open when no closer exists — which would produce ERROR nodes
 /// for cases like "*List preceding blank" or "_not emphasized".
+/// A valid closer must satisfy flanking rules: the character AFTER the
+/// delimiter must NOT be alphanumeric (WORD class). This prevents
+/// `*text*word` from matching — the * before "word" is not a valid closer.
 static bool has_matching_closer(TSLexer *lexer, int32_t delimiter) {
     while (lexer->lookahead != '\n' && !lexer->eof(lexer)) {
         if (lexer->lookahead == delimiter) {
-            return true;
+            lexer->advance(lexer, false);
+            // Valid closer: next char must not be alphanumeric
+            if (classify_char(lexer->lookahead) != CHAR_CLASS_WORD) {
+                return true;
+            }
+            // Not a valid closer — continue scanning
+            continue;
         }
         lexer->advance(lexer, false);
     }
@@ -877,8 +886,12 @@ bool tree_sitter_lex_external_scanner_scan(void *payload, TSLexer *lexer,
         if (indent > current_indent) {
             // Verbatim closing annotations can be deeply indented relative to
             // the grammar's current context if the outer list ended prematurely.
-            // Prioritize them over INDENT to close the verbatim block!
-            if (valid_symbols[ANNOTATION_MARKER] && lexer->lookahead == ':') {
+            // Prioritize them over INDENT to close the verbatim block — but
+            // only when INDENT is not valid. When INDENT IS valid (e.g.,
+            // definition body starting with ::), INDENT must win so the
+            // grammar can open the indented block before parsing its content.
+            if (valid_symbols[ANNOTATION_MARKER] && !valid_symbols[INDENT] &&
+                lexer->lookahead == ':') {
                 // Let it fall through to the annotation marker detection
             } else if (valid_symbols[INDENT]) {
                 scanner->indent_depth++;
@@ -1001,18 +1014,29 @@ bool tree_sitter_lex_external_scanner_scan(void *payload, TSLexer *lexer,
             int32_t next_char = lexer->lookahead; // char after delimiter
             lexer->mark_end(lexer);               // mark at X+1 (1-char token)
 
-            // Scan rest of line to check for trailing : and matching closer
+            // Scan rest of line to check for trailing : and matching closer.
+            // A valid closer must satisfy flanking: char after delimiter is not WORD.
             int32_t last_char = next_char;
             int32_t last_nonws = (next_char != ' ' && next_char != '\t') ? next_char : 0;
             bool has_closer = false;
+            bool just_saw_delimiter = false;
             while (lexer->lookahead != '\n' && !lexer->eof(lexer)) {
-                if (lexer->lookahead == delimiter) has_closer = true;
+                if (just_saw_delimiter) {
+                    // Check flanking: next char after delimiter must not be WORD
+                    if (classify_char(lexer->lookahead) != CHAR_CLASS_WORD) {
+                        has_closer = true;
+                    }
+                    just_saw_delimiter = false;
+                }
+                if (lexer->lookahead == delimiter) just_saw_delimiter = true;
                 last_char = lexer->lookahead;
                 if (lexer->lookahead != ' ' && lexer->lookahead != '\t') {
                     last_nonws = lexer->lookahead;
                 }
                 lexer->advance(lexer, false);
             }
+            // Handle delimiter at end of line (next char is \n — not WORD)
+            if (just_saw_delimiter) has_closer = true;
 
             if (last_nonws == ':') {
                 // Subject line — check for definition subject first
