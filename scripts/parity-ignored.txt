@@ -54,7 +54,7 @@ comms/specs/elements/table.docs/table-04-flat-cell-merging.lex
 comms/specs/elements/table.docs/table-17-flat-rowspan.lex
 comms/specs/elements/table.docs/table-18-flat-combined-spans.lex
 
-# --- DocumentTitle/Subtitle confusion (4 files) ---
+# --- DocumentTitle/Subtitle confusion (5 files) ---
 # Tree-sitter parses first line + continuation as DocumentTitle + Subtitle
 # when lex-core sees a Paragraph or Definition. Context-dependent
 # disambiguation not fully implemented in tree-sitter grammar.
@@ -62,26 +62,14 @@ comms/specs/elements/definition.docs/definition-05-nested-with-list.lex
 comms/specs/elements/definition.docs/definition-100-document-nested-sessions.lex
 comms/specs/elements/document.docs/document-03-title-multiline.lex
 comms/specs/elements/document.docs/document-08-subtitle-with-inlines.lex
+comms/specs/elements/verbatim.docs/verbatim-16-fullwidth-nested.lex
 
-# --- Fullwidth leading-space preservation (3 files) ---
+# --- Fullwidth leading-space preservation (2 files) ---
 # In fullwidth blocks (tables and verbatim), tree-sitter preserves a leading
 # space on content lines that lex-core strips.
 comms/specs/elements/table.docs/table-11-fullwidth.lex
 comms/specs/elements/table.docs/table-12-fullwidth-nested.lex
-comms/specs/elements/verbatim.docs/verbatim-14-fullwidth.lex
-comms/specs/elements/verbatim.docs/verbatim-16-fullwidth-nested.lex
-comms/specs/elements/verbatim.docs/verbatim-17-fullwidth-leading-blank.lex
-
-# --- Verbatim inflow leading blank absorption (5 files) ---
-# Tree-sitter's _session_break absorbs leading blank lines in the block, 
-# omitting an empty content string that lex-core emits.
-comms/specs/elements/verbatim.docs/verbatim-01-flat-simple-code.lex
-comms/specs/elements/verbatim.docs/verbatim-06-nested-in-definition.lex
-comms/specs/elements/verbatim.docs/verbatim-07-nested-in-list.lex
-comms/specs/elements/verbatim.docs/verbatim-08-nested-deep.lex
-comms/specs/elements/verbatim.docs/verbatim-15-inflow-leading-blank.lex
-
-# --- Miscellaneous (5 files) ---
+# --- Miscellaneous (7 files) ---
 # Dialog detection: dash-prefixed lines parsed as list items instead of dialog
 comms/specs/elements/paragraph.docs/paragraph-09-dialog.lex
 # List item boundary: - line inside list item body not promoted to sibling
@@ -90,3 +78,6 @@ comms/specs/elements/session.docs/session-13-blankline-issue.lex
 comms/specs/elements/table.docs/table-06-flat-with-footnotes.lex
 # Table nested in definition: structural representation difference
 comms/specs/elements/table.docs/table-08-nested-in-definition.lex
+# BlankLine separating paragraph and VerbatimBlock not suppressed 
+comms/specs/elements/verbatim.docs/verbatim-06-nested-in-definition.lex
+comms/specs/elements/verbatim.docs/verbatim-07-nested-in-list.lex
