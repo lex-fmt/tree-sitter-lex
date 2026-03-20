@@ -35,6 +35,11 @@ comms/specs/elements/annotation.docs/annotation-27-attachment-example-l-multiple
 comms/specs/elements/annotation.docs/annotation-28-attachment-example-j-session-inner.lex
 comms/specs/elements/annotation.docs/annotation-29-attachment-example-k-session-container.lex
 
+# --- Table detection divergence (1 file) ---
+# Headerless table (header=0): lex-core detects it as a Table node; tree-sitter
+# sees it as a Definition with a Paragraph (no pipe-row-specific detection).
+comms/specs/elements/table.docs/table-16-flat-no-header.lex
+
 # --- Table span marker serialization (4 files) ---
 # Tree-sitter preserves raw >> and ^^ cell-spanning markers; lex-core
 # resolves/collapses them in parity output.
