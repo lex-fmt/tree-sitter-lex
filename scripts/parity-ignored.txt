@@ -35,9 +35,20 @@ comms/specs/elements/annotation.docs/annotation-27-attachment-example-l-multiple
 comms/specs/elements/annotation.docs/annotation-28-attachment-example-j-session-inner.lex
 comms/specs/elements/annotation.docs/annotation-29-attachment-example-k-session-container.lex
 
-# --- Table detection divergence (1 file) ---
-# Headerless table (header=0): lex-core detects it as a Table node; tree-sitter
-# sees it as a Definition with a Paragraph (no pipe-row-specific detection).
+# --- Table vs Definition divergence (10 files) ---
+# lex-core detects pipe-row content as Table nodes; tree-sitter sees them as
+# Definition nodes (tables are definitions with pipe-row body in the CST).
+# This is the core architectural divergence: two-parser design means the CST
+# does not have a dedicated Table node type.
+comms/specs/elements/table.docs/table-01-flat-minimal.lex
+comms/specs/elements/table.docs/table-02-flat-with-alignment.lex
+comms/specs/elements/table.docs/table-07-flat-separator-lines.lex
+comms/specs/elements/table.docs/table-08-nested-in-definition.lex
+comms/specs/elements/table.docs/table-09-nested-in-list.lex
+comms/specs/elements/table.docs/table-10-nested-deep.lex
+comms/specs/elements/table.docs/table-13-flat-mismatched-rows.lex
+comms/specs/elements/table.docs/table-14-flat-empty-cells.lex
+comms/specs/elements/table.docs/table-15-flat-single-row.lex
 comms/specs/elements/table.docs/table-16-flat-no-header.lex
 
 # --- Table span marker serialization (4 files) ---
