@@ -274,6 +274,39 @@ function markLastContent(children) {
   }
 }
 
+/**
+ * Print children inside a table (definition with pipe rows).
+ * Table rows are printed as quoted pipe-delimited lines.
+ * Annotations, separator rows, and blank lines are printed normally.
+ */
+function printTableChild(node, depth) {
+  switch (node.tag) {
+    case "table_row": {
+      const cells = node.children
+        .filter((c) => c.tag === "table_cell")
+        .map((c) => leafText(c).trim());
+      const line = `| ${cells.join(" | ")} |`;
+      console.log(`${ind(depth)}"${line}"`);
+      break;
+    }
+    case "table_separator_row": {
+      // Separator rows are cosmetic, lex-core skips them in parity output
+      break;
+    }
+    case "blank_line":
+      // Blank lines inside tables are structural (multi-line mode), skip in parity
+      break;
+    case "annotation_single":
+    case "annotation_block":
+      // :: table :: annotation inside the table — skip in parity
+      // (lex-core attaches it as metadata, not visible in parity output)
+      break;
+    default:
+      printParity(node, depth);
+      break;
+  }
+}
+
 function printParity(node, depth) {
   if (!node || !node.tag) return;
 
@@ -330,11 +363,21 @@ function printParity(node, depth) {
       const subject = subjectNode
         ? leafText(subjectNode).replace(/:\s*$/, "").trimEnd()
         : "";
-      console.log(`${ind(depth)}Definition "${subject}"`);
-      markLastContent(node.children);
-      for (const child of node.children) {
-        if (child.attrs.field === "subject") continue;
-        printParity(child, depth + 1);
+      // Detect table: definition whose content starts with pipe rows
+      const isTable = node.children.some((c) => c.tag === "table_row");
+      if (isTable) {
+        console.log(`${ind(depth)}Table "${subject}"`);
+        for (const child of node.children) {
+          if (child.attrs.field === "subject") continue;
+          printTableChild(child, depth + 1);
+        }
+      } else {
+        console.log(`${ind(depth)}Definition "${subject}"`);
+        markLastContent(node.children);
+        for (const child of node.children) {
+          if (child.attrs.field === "subject") continue;
+          printParity(child, depth + 1);
+        }
       }
       break;
     }

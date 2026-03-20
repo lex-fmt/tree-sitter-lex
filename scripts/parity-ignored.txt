@@ -35,6 +35,14 @@ comms/specs/elements/annotation.docs/annotation-27-attachment-example-l-multiple
 comms/specs/elements/annotation.docs/annotation-28-attachment-example-j-session-inner.lex
 comms/specs/elements/annotation.docs/annotation-29-attachment-example-k-session-container.lex
 
+# --- Table span marker serialization (4 files) ---
+# Tree-sitter preserves raw >> and ^^ cell-spanning markers; lex-core
+# resolves/collapses them in parity output.
+comms/specs/elements/table.docs/table-03-flat-header-count.lex
+comms/specs/elements/table.docs/table-04-flat-cell-merging.lex
+comms/specs/elements/table.docs/table-17-flat-rowspan.lex
+comms/specs/elements/table.docs/table-18-flat-combined-spans.lex
+
 # --- Table cell content serialization (6 files) ---
 # Multi-line table cells: lex-core joins into one string, tree-sitter splits
 # into per-row entries. Also includes cell-level element differences (list,
@@ -46,13 +54,15 @@ comms/specs/elements/table.docs/table-21-cell-with-verbatim.lex
 comms/specs/elements/table.docs/table-22-cell-with-mixed-content.lex
 comms/specs/elements/table.docs/table-23-cell-with-annotation.lex
 
-# --- Table span marker serialization (4 files) ---
-# Tree-sitter preserves raw >> and ^^ cell-spanning markers; lex-core
-# resolves/collapses them in parity output.
-comms/specs/elements/table.docs/table-03-flat-header-count.lex
-comms/specs/elements/table.docs/table-04-flat-cell-merging.lex
-comms/specs/elements/table.docs/table-17-flat-rowspan.lex
-comms/specs/elements/table.docs/table-18-flat-combined-spans.lex
+# --- Table footnote serialization (1 file) ---
+# Footnote reference absorbs preceding cell content
+comms/specs/elements/table.docs/table-06-flat-with-footnotes.lex
+
+# --- Fullwidth table leading-space preservation (2 files) ---
+# In fullwidth blocks (tables and verbatim), tree-sitter preserves a leading
+# space on content lines that lex-core strips.
+comms/specs/elements/table.docs/table-11-fullwidth.lex
+comms/specs/elements/table.docs/table-12-fullwidth-nested.lex
 
 # --- DocumentTitle/Subtitle confusion (5 files) ---
 # Tree-sitter parses first line + continuation as DocumentTitle + Subtitle
@@ -64,20 +74,11 @@ comms/specs/elements/document.docs/document-03-title-multiline.lex
 comms/specs/elements/document.docs/document-08-subtitle-with-inlines.lex
 comms/specs/elements/verbatim.docs/verbatim-16-fullwidth-nested.lex
 
-# --- Fullwidth leading-space preservation (2 files) ---
-# In fullwidth blocks (tables and verbatim), tree-sitter preserves a leading
-# space on content lines that lex-core strips.
-comms/specs/elements/table.docs/table-11-fullwidth.lex
-comms/specs/elements/table.docs/table-12-fullwidth-nested.lex
-# --- Miscellaneous (7 files) ---
+# --- Miscellaneous (4 files) ---
 # Dialog detection: dash-prefixed lines parsed as list items instead of dialog
 comms/specs/elements/paragraph.docs/paragraph-09-dialog.lex
 # List item boundary: - line inside list item body not promoted to sibling
 comms/specs/elements/session.docs/session-13-blankline-issue.lex
-# Footnote reference absorbs preceding cell content
-comms/specs/elements/table.docs/table-06-flat-with-footnotes.lex
-# Table nested in definition: structural representation difference
-comms/specs/elements/table.docs/table-08-nested-in-definition.lex
-# BlankLine separating paragraph and VerbatimBlock not suppressed 
+# BlankLine separating paragraph and VerbatimBlock not suppressed
 comms/specs/elements/verbatim.docs/verbatim-06-nested-in-definition.lex
 comms/specs/elements/verbatim.docs/verbatim-07-nested-in-list.lex
