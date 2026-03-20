@@ -108,12 +108,25 @@
   (annotation_header) @markup.raw.block)
 
 ; === Table structure ===
-; Tables parse as definitions with pipe-row content. Table subjects get
-; definition styling (@variable.other.definition). The LSP semantic tokens
-; provide richer override (Table subject vs Definition subject).
-; Pipe delimiters in table rows — dim punctuation
+; Tables parse as definitions with pipe-row content.
+
+; Table caption — italic to distinguish from regular definitions.
+; Overrides the generic @variable.other.definition capture above.
+(definition
+  subject: (subject_content) @markup.italic
+  (table_row))
+
+; Header row — first table_row in a definition (bold text).
+; The anchor (.) ensures only the first row after the subject matches.
+(definition
+  subject: (_) .
+  (table_row
+    (table_cell
+      (text_content) @markup.bold)))
+
+; Pipe delimiters — dimmed punctuation
 (table_row
-  (pipe_delimiter) @punctuation.delimiter)
+  (pipe_delimiter) @comment)
 
 ; Table separator rows — fully dimmed (cosmetic, parser ignores them)
 (table_separator_row) @comment
