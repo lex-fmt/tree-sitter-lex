@@ -107,23 +107,10 @@
 (verbatim_block
   (annotation_header) @markup.raw.block)
 
-; === Table blocks (override verbatim captures) ===
-; Table blocks are verbatim_blocks whose annotation_header starts with "table".
-; Subject is a caption (heading), body is inline-parsed (not raw).
-; These MUST appear AFTER generic verbatim captures to take priority.
-
-; Table subject — highlighted as a heading/caption, not raw block
-((verbatim_block
-  subject: (subject_content) @markup.heading
-  (annotation_header) @_lang)
- (#match? @_lang "^\\s*table"))
-
-; Table closing annotation — highlighted as keyword, not raw block
-((verbatim_block
-  (annotation_header) @keyword)
- (#match? @keyword "^\\s*table"))
-
 ; === Table structure ===
+; Tables parse as definitions with pipe-row content. Table subjects get
+; definition styling (@variable.other.definition). The LSP semantic tokens
+; provide richer override (Table subject vs Definition subject).
 ; Pipe delimiters in table rows — dim punctuation
 (table_row
   (pipe_delimiter) @punctuation.delimiter)
