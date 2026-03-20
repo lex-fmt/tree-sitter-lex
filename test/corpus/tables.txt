@@ -296,3 +296,51 @@ Refs:
           (reference
             (tocome_reference))))
       (pipe_delimiter))))
+
+==================
+Table followed by other elements (table is not terminal)
+==================
+1. Results
+
+    Summary:
+        | Name  | Score |
+        | Alice | 95    |
+
+    This paragraph follows the table.
+
+    - And a list item too
+---
+
+(document
+  (session
+    title: (line_content
+      (list_marker)
+      (text_content))
+    (definition
+      subject: (subject_content)
+      (table_row
+        (pipe_delimiter)
+        (table_cell
+          (text_content))
+        (pipe_delimiter)
+        (table_cell
+          (text_content))
+        (pipe_delimiter))
+      (table_row
+        (pipe_delimiter)
+        (table_cell
+          (text_content))
+        (pipe_delimiter)
+        (table_cell
+          (text_content))
+        (pipe_delimiter))
+      (blank_line))
+    (paragraph
+      (text_line
+        (line_content
+          (text_content))))
+    (blank_line)
+    (paragraph
+      (dialog_line
+        (list_marker)
+        (text_content)))))

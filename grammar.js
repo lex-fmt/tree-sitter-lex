@@ -356,10 +356,16 @@ module.exports = grammar({
       ),
 
     // ===== Table Rows =====
-    // Pipe-delimited table rows. The scanner emits _pipe_row_start for the
-    // first | and pipe_delimiter for subsequent |. Cell content between
-    // delimiters uses the standard _inline rule — the scanner intercepts
-    // | as pipe_delimiter before the grammar lexer matches it as _word_other.
+    // Pipe-delimited table rows within definitions. The CST preserves the
+    // full hierarchy: definition > table_row > table_cell > text_content.
+    // Tables are NOT terminal nodes — rows and cells are navigable in the
+    // CST. Block-level content inside cells (lists, definitions, etc.) is
+    // resolved at the AST level by lex-core, not at CST level.
+    //
+    // The scanner emits _pipe_row_start for the first | and pipe_delimiter
+    // for subsequent |. Cell content between delimiters uses the standard
+    // _inline rule — the scanner intercepts | as pipe_delimiter before the
+    // grammar lexer matches it as _word_other.
     table_row: ($) =>
       prec(
         5,
