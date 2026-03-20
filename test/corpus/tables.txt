@@ -4,11 +4,10 @@ Simple table
 Results:
     | A | B |
     | 1 | 2 |
-:: table ::
 ---
 
 (document
-  (verbatim_block
+  (definition
     subject: (subject_content)
     (table_row
       (pipe_delimiter)
@@ -25,10 +24,7 @@ Results:
       (pipe_delimiter)
       (table_cell
         (text_content))
-      (pipe_delimiter))
-    (annotation_marker)
-    (annotation_header)
-    (annotation_close)))
+      (pipe_delimiter))))
 
 ==================
 Table with parameters
@@ -36,11 +32,12 @@ Table with parameters
 Data:
     | Name  | Value |
     | Alpha | 100   |
-:: table align=lcr header=1 ::
+
+    :: table align=lcr header=1 ::
 ---
 
 (document
-  (verbatim_block
+  (definition
     subject: (subject_content)
     (table_row
       (pipe_delimiter)
@@ -58,9 +55,11 @@ Data:
       (table_cell
         (text_content))
       (pipe_delimiter))
-    (annotation_marker)
-    (annotation_header)
-    (annotation_close)))
+    (blank_line)
+    (annotation_single
+      (annotation_marker)
+      (annotation_header)
+      (annotation_close))))
 
 ==================
 Table with inline formatting in cells
@@ -68,11 +67,10 @@ Table with inline formatting in cells
 Stats:
     | *Name* | `Code` |
     | _test_ | #42#   |
-:: table ::
 ---
 
 (document
-  (verbatim_block
+  (definition
     subject: (subject_content)
     (table_row
       (pipe_delimiter)
@@ -93,10 +91,7 @@ Stats:
       (table_cell
         (text_content
           (math_span)))
-      (pipe_delimiter))
-    (annotation_marker)
-    (annotation_header)
-    (annotation_close)))
+      (pipe_delimiter))))
 
 ==================
 Table nested in definition
@@ -105,13 +100,12 @@ Summary:
     Results:
         | A | B |
         | 1 | 2 |
-    :: table ::
 ---
 
 (document
   (definition
     subject: (subject_content)
-    (verbatim_block
+    (definition
       subject: (subject_content)
       (table_row
         (pipe_delimiter)
@@ -128,10 +122,7 @@ Summary:
         (pipe_delimiter)
         (table_cell
           (text_content))
-        (pipe_delimiter))
-      (annotation_marker)
-      (annotation_header)
-      (annotation_close))))
+        (pipe_delimiter)))))
 
 ==================
 Table with separator line
@@ -140,11 +131,10 @@ Data:
     | Name  | Score |
     |-------|-------|
     | Alice | 95    |
-:: table ::
 ---
 
 (document
-  (verbatim_block
+  (definition
     subject: (subject_content)
     (table_row
       (pipe_delimiter)
@@ -162,10 +152,7 @@ Data:
       (pipe_delimiter)
       (table_cell
         (text_content))
-      (pipe_delimiter))
-    (annotation_marker)
-    (annotation_header)
-    (annotation_close)))
+      (pipe_delimiter))))
 
 ==================
 Table with merge markers
@@ -173,11 +160,12 @@ Table with merge markers
 Matrix:
     | Q1 | >> | Q2 | >> |
     | A  | B  | C  | D  |
-:: table header=2 ::
+
+    :: table header=2 ::
 ---
 
 (document
-  (verbatim_block
+  (definition
     subject: (subject_content)
     (table_row
       (pipe_delimiter)
@@ -207,9 +195,11 @@ Matrix:
       (table_cell
         (text_content))
       (pipe_delimiter))
-    (annotation_marker)
-    (annotation_header)
-    (annotation_close)))
+    (blank_line)
+    (annotation_single
+      (annotation_marker)
+      (annotation_header)
+      (annotation_close))))
 
 ==================
 Table with empty cells
@@ -217,11 +207,10 @@ Table with empty cells
 Sparse:
     | A |   | C |
     |   | B |   |
-:: table ::
 ---
 
 (document
-  (verbatim_block
+  (definition
     subject: (subject_content)
     (table_row
       (pipe_delimiter)
@@ -244,10 +233,7 @@ Sparse:
       (pipe_delimiter)
       (table_cell
         (text_content))
-      (pipe_delimiter))
-    (annotation_marker)
-    (annotation_header)
-    (annotation_close)))
+      (pipe_delimiter))))
 
 ==================
 Table with multi-line mode (blank line between rows)
@@ -256,11 +242,10 @@ Log:
     | Trial   | Result  |
 
     | Trial 1 | Success |
-:: table ::
 ---
 
 (document
-  (verbatim_block
+  (definition
     subject: (subject_content)
     (table_row
       (pipe_delimiter)
@@ -278,10 +263,7 @@ Log:
       (pipe_delimiter)
       (table_cell
         (text_content))
-      (pipe_delimiter))
-    (annotation_marker)
-    (annotation_header)
-    (annotation_close)))
+      (pipe_delimiter))))
 
 ==================
 Table with references in cells
@@ -289,11 +271,10 @@ Table with references in cells
 Refs:
     | Source | Note |
     | [1]   | [TK] |
-:: table ::
 ---
 
 (document
-  (verbatim_block
+  (definition
     subject: (subject_content)
     (table_row
       (pipe_delimiter)
@@ -314,7 +295,4 @@ Refs:
         (text_content
           (reference
             (tocome_reference))))
-      (pipe_delimiter))
-    (annotation_marker)
-    (annotation_header)
-    (annotation_close)))
+      (pipe_delimiter))))
