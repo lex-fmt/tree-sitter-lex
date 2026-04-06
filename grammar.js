@@ -507,8 +507,8 @@ module.exports = grammar({
     // [@key] or [@key, p.42] — citation
     citation_reference: (_$) => token(seq("[", "@", /[^\]\n]+/, "]")),
 
-    // [^label] — annotation reference
-    annotation_reference: (_$) => token(seq("[", "^", /[^\]\n]+/, "]")),
+    // [::label] — annotation reference
+    annotation_reference: (_$) => token(seq("[", "::", /[^\]\n]+/, "]")),
 
     // [https://...], [http://...], [mailto:...] — URL
     url_reference: (_$) =>

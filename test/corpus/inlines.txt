@@ -391,7 +391,7 @@ See [@jones-2023] for details
 ==================
 Annotation reference
 ==================
-As noted [^important] previously
+As noted [::important] previously
 ---
 
 (document
@@ -489,7 +489,7 @@ See footnote [42] for details
 ==================
 All reference types in one line
 ==================
-Refs: [@cite] [^fn] [https://url] [./file] [#1] [TK] [42] [General]
+Refs: [@cite] [::fn] [https://url] [./file] [#1] [TK] [42] [General]
 ---
 
 (document
