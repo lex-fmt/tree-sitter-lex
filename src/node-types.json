@@ -472,15 +472,15 @@
       "required": true,
       "types": [
         {
+          "type": "annotation_reference",
+          "named": true
+        },
+        {
           "type": "citation_reference",
           "named": true
         },
         {
           "type": "file_reference",
-          "named": true
-        },
-        {
-          "type": "footnote_reference",
           "named": true
         },
         {
@@ -849,6 +849,10 @@
     "named": true
   },
   {
+    "type": "annotation_reference",
+    "named": true
+  },
+  {
     "type": "citation_reference",
     "named": true
   },
@@ -862,10 +866,6 @@
   },
   {
     "type": "file_reference",
-    "named": true
-  },
-  {
-    "type": "footnote_reference",
     "named": true
   },
   {

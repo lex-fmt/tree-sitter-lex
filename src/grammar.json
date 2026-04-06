@@ -1297,7 +1297,7 @@
         },
         {
           "type": "SYMBOL",
-          "name": "footnote_reference"
+          "name": "annotation_reference"
         },
         {
           "type": "SYMBOL",
@@ -1349,7 +1349,7 @@
         ]
       }
     },
-    "footnote_reference": {
+    "annotation_reference": {
       "type": "TOKEN",
       "content": {
         "type": "SEQ",
