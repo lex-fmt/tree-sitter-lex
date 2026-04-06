@@ -495,7 +495,7 @@ module.exports = grammar({
     reference: ($) =>
       choice(
         $.citation_reference,
-        $.footnote_reference,
+        $.annotation_reference,
         $.url_reference,
         $.file_reference,
         $.session_reference,
@@ -507,8 +507,8 @@ module.exports = grammar({
     // [@key] or [@key, p.42] — citation
     citation_reference: (_$) => token(seq("[", "@", /[^\]\n]+/, "]")),
 
-    // [^label] — labeled footnote
-    footnote_reference: (_$) => token(seq("[", "^", /[^\]\n]+/, "]")),
+    // [^label] — annotation reference
+    annotation_reference: (_$) => token(seq("[", "^", /[^\]\n]+/, "]")),
 
     // [https://...], [http://...], [mailto:...] — URL
     url_reference: (_$) =>

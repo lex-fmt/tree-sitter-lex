@@ -389,7 +389,7 @@ See [@jones-2023] for details
             (citation_reference)))))))
 
 ==================
-Footnote labeled reference
+Annotation reference
 ==================
 As noted [^important] previously
 ---
@@ -400,7 +400,7 @@ As noted [^important] previously
       (line_content
         (text_content
           (reference
-            (footnote_reference)))))))
+            (annotation_reference)))))))
 
 ==================
 URL reference
@@ -500,7 +500,7 @@ Refs: [@cite] [^fn] [https://url] [./file] [#1] [TK] [42] [General]
           (reference
             (citation_reference))
           (reference
-            (footnote_reference))
+            (annotation_reference))
           (reference
             (url_reference))
           (reference
