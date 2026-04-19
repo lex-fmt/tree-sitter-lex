@@ -132,6 +132,17 @@ static uint8_t classify_char(int32_t c) {
     return CHAR_CLASS_PUNCTUATION;
 }
 
+/// Valid first-content character after an opening emphasis/strong delimiter.
+/// Accepts word chars (traditional content) or a DIFFERENT inline start marker
+/// (*, _, `, #, [) — the latter enables directly-nested formatting such as
+/// _*foo*_ and *_foo_*. The same delimiter repeated (**, __, ``, ##, [[) is
+/// rejected since it would produce empty content.
+static bool is_valid_open_follower(int32_t c, int32_t delimiter) {
+    if (classify_char(c) == CHAR_CLASS_WORD) return true;
+    if (c == delimiter) return false;
+    return c == '*' || c == '_' || c == '`' || c == '#' || c == '[';
+}
+
 void *tree_sitter_lex_external_scanner_create(void) {
     Scanner *scanner = calloc(1, sizeof(Scanner));
     scanner->indent_stack[0] = 0;
@@ -1057,13 +1068,13 @@ bool tree_sitter_lex_external_scanner_scan(void *payload, TSLexer *lexer,
             // Only emit if a matching closer exists on this line,
             // otherwise the unclosed delimiter produces ERROR nodes.
             if (has_closer && delimiter == '*' && valid_symbols[STRONG_OPEN] &&
-                classify_char(next_char) == CHAR_CLASS_WORD) {
+                is_valid_open_follower(next_char, delimiter)) {
                 scanner->last_char_class = CHAR_CLASS_PUNCTUATION;
                 lexer->result_symbol = STRONG_OPEN;
                 return true;
             }
             if (has_closer && delimiter == '_' && valid_symbols[EMPHASIS_OPEN] &&
-                classify_char(next_char) == CHAR_CLASS_WORD) {
+                is_valid_open_follower(next_char, delimiter)) {
                 scanner->last_char_class = CHAR_CLASS_PUNCTUATION;
                 lexer->result_symbol = EMPHASIS_OPEN;
                 return true;
@@ -1316,11 +1327,12 @@ bool tree_sitter_lex_external_scanner_scan(void *payload, TSLexer *lexer,
 
     // Opening * for strong
     if (valid_symbols[STRONG_OPEN] && lexer->lookahead == '*') {
-        // Flanking: prev must not be word char, next must be word char
+        // Flanking: prev must not be word char; next must be a word char
+        // or another inline start marker (enables directly-nested *_foo_*).
         if (scanner->last_char_class != CHAR_CLASS_WORD) {
             lexer->mark_end(lexer);
             lexer->advance(lexer, false);
-            if (classify_char(lexer->lookahead) == CHAR_CLASS_WORD) {
+            if (is_valid_open_follower(lexer->lookahead, '*')) {
                 // Check that a matching * exists on the rest of the line.
                 // Without this, unclosed * (e.g., "*List..." or "mass*accel")
                 // would emit _strong_open and produce ERROR nodes.
@@ -1356,7 +1368,7 @@ bool tree_sitter_lex_external_scanner_scan(void *payload, TSLexer *lexer,
         if (scanner->last_char_class != CHAR_CLASS_WORD) {
             lexer->mark_end(lexer);
             lexer->advance(lexer, false);
-            if (classify_char(lexer->lookahead) == CHAR_CLASS_WORD) {
+            if (is_valid_open_follower(lexer->lookahead, '_')) {
                 // Check that a matching _ exists on the rest of the line
                 lexer->mark_end(lexer);
                 if (has_matching_closer(lexer, '_')) {

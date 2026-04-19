@@ -162,6 +162,48 @@ Here is *bold* and _italic_ together
           (emphasis))))))
 
 ==================
+Emphasis directly wrapping strong
+==================
+_*both*_ end
+---
+
+(document
+  (paragraph
+    (text_line
+      (line_content
+        (text_content
+          (emphasis
+            (strong)))))))
+
+==================
+Strong directly wrapping emphasis
+==================
+*_inverted_* end
+---
+
+(document
+  (paragraph
+    (text_line
+      (line_content
+        (text_content
+          (strong
+            (emphasis)))))))
+
+==================
+Nested emphasis with multi-word strong
+==================
+_*bold multiple words*_ end
+---
+
+(document
+  (paragraph
+    (text_line
+      (line_content
+        (text_content
+          (emphasis
+            (strong)))))))
+
+==================
 Unmatched asterisk
 ==================
 7 * 8 = 56

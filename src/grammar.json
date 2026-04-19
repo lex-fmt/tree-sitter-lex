@@ -1174,11 +1174,7 @@
           "name": "_strong_open"
         },
         {
-          "type": "SYMBOL",
-          "name": "_word_alnum"
-        },
-        {
-          "type": "REPEAT",
+          "type": "REPEAT1",
           "content": {
             "type": "SYMBOL",
             "name": "_inline_no_star"
@@ -1198,11 +1194,7 @@
           "name": "_emphasis_open"
         },
         {
-          "type": "SYMBOL",
-          "name": "_word_alnum"
-        },
-        {
-          "type": "REPEAT",
+          "type": "REPEAT1",
           "content": {
             "type": "SYMBOL",
             "name": "_inline_no_underscore"

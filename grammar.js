@@ -448,19 +448,20 @@ module.exports = grammar({
       ),
 
     // ===== Strong and Emphasis =====
+    // The first element after the open marker may be a word_alnum (traditional
+    // content) or another inline element (enables directly-nested formatting
+    // such as *_foo_* and _*foo*_). repeat1 enforces non-empty content.
     strong: ($) =>
       seq(
         $._strong_open,
-        $._word_alnum,
-        repeat($._inline_no_star),
+        repeat1($._inline_no_star),
         $._strong_close,
       ),
 
     emphasis: ($) =>
       seq(
         $._emphasis_open,
-        $._word_alnum,
-        repeat($._inline_no_underscore),
+        repeat1($._inline_no_underscore),
         $._emphasis_close,
       ),
 
