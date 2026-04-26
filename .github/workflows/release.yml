@@ -32,9 +32,12 @@ jobs:
       - name: Build WASM
         run: npx tree-sitter build --wasm
 
+      - name: Smoke-check embedded grammars manifest
+        run: scripts/smoke-grammars.sh
+
       - name: Package artifact
         run: |
-          mkdir -p dist/src dist/queries
+          mkdir -p dist/src dist/queries dist/shared
           cp src/parser.c dist/src/
           cp src/scanner.c dist/src/
           mkdir -p dist/src/tree_sitter
@@ -43,6 +46,7 @@ jobs:
           cp grammar.js dist/
           cp package.json dist/
           cp tree-sitter.json dist/
+          cp shared/embedded-grammars.json dist/shared/
           if [ -f tree-sitter-lex.wasm ]; then
             cp tree-sitter-lex.wasm dist/
           fi

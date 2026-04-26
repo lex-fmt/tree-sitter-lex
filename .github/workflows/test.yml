@@ -25,3 +25,6 @@ jobs:
 
       - name: Run all checks
         run: scripts/test-all
+
+      - name: Smoke-check embedded grammars manifest
+        run: scripts/smoke-grammars.sh

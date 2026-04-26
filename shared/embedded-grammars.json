@@ -1,0 +1,46 @@
+{
+  "description": "Curated tree-sitter grammars editors should bundle to render `:: lang ::` injection inside Lex verbatim blocks. Lex isn't a gatekeeper of formats — this is a packaging convenience, not a contract about which languages 'belong'. Editors are free to bundle more, fewer, or different grammars; injection still works for any language the host can resolve. Bumping a version is an explicit decision: edit this file, run scripts/smoke-grammars.sh, and cut a tree-sitter-lex release. Editors then pick up the new manifest by bumping their tree-sitter pin.",
+  "schema_version": 1,
+  "grammars": [
+    {
+      "name": "python",
+      "version": "v0.25.0",
+      "repo": "tree-sitter/tree-sitter-python",
+      "wasm_asset": "tree-sitter-python.wasm",
+      "queries_path": "queries/highlights.scm",
+      "license": "MIT"
+    },
+    {
+      "name": "javascript",
+      "version": "v0.25.0",
+      "repo": "tree-sitter/tree-sitter-javascript",
+      "wasm_asset": "tree-sitter-javascript.wasm",
+      "queries_path": "queries/highlights.scm",
+      "license": "MIT"
+    },
+    {
+      "name": "json",
+      "version": "v0.24.8",
+      "repo": "tree-sitter/tree-sitter-json",
+      "wasm_asset": "tree-sitter-json.wasm",
+      "queries_path": "queries/highlights.scm",
+      "license": "MIT"
+    },
+    {
+      "name": "rust",
+      "version": "v0.24.2",
+      "repo": "tree-sitter/tree-sitter-rust",
+      "wasm_asset": "tree-sitter-rust.wasm",
+      "queries_path": "queries/highlights.scm",
+      "license": "MIT"
+    },
+    {
+      "name": "bash",
+      "version": "v0.25.1",
+      "repo": "tree-sitter/tree-sitter-bash",
+      "wasm_asset": "tree-sitter-bash.wasm",
+      "queries_path": "queries/highlights.scm",
+      "license": "MIT"
+    }
+  ]
+}
