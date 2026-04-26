@@ -1,0 +1,75 @@
+name: Quarterly grammar bump
+
+# Runs at 09:23 UTC on Jan 1, Apr 1, Jul 1, Oct 1 — quarterly cadence
+# for refreshing shared/embedded-grammars.json against the latest
+# upstream releases. Smoke-grammars validates the new pins; if any
+# grammar moved, the workflow opens a PR for human review.
+#
+# Trigger manually with `gh workflow run quarterly-grammar-bump.yml`
+# (or via the Actions tab) when an earlier bump is wanted.
+
+on:
+  schedule:
+    - cron: '23 9 1 1,4,7,10 *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  bump:
+    name: Refresh manifest and open PR
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Bump grammar versions in manifest
+        id: bump
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          changes=$(scripts/bump-grammars.sh)
+          if [[ -n "$changes" ]]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            {
+              echo "summary<<BUMP_EOF"
+              echo "$changes"
+              echo "BUMP_EOF"
+            } >> "$GITHUB_OUTPUT"
+            echo "Manifest updated:"
+            echo "$changes"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "All grammars already at latest upstream tag."
+          fi
+
+      - name: Smoke-check the new manifest
+        if: steps.bump.outputs.changed == 'true'
+        run: scripts/smoke-grammars.sh
+
+      - name: Open pull request
+        if: steps.bump.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: chore/grammar-bump
+          delete-branch: true
+          commit-message: "Bump embedded-grammars manifest to latest upstream"
+          title: "Quarterly grammar bump"
+          body: |
+            Quarterly bump of `shared/embedded-grammars.json` to the latest
+            non-prerelease upstream tags. `scripts/smoke-grammars.sh` passed
+            in CI against the new pins.
+
+            ```
+            ${{ steps.bump.outputs.summary }}
+            ```
+
+            Merge to roll the new versions into the next `tree-sitter-lex`
+            release; downstream editors (vscode, lexed) pick them up by
+            bumping their `tree-sitter` pin in `shared/lex-deps.json`.
