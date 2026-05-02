@@ -90,6 +90,27 @@ comms/specs/elements/document.docs/document-03-title-multiline.lex
 comms/specs/elements/document.docs/document-08-subtitle-with-inlines.lex
 comms/specs/elements/verbatim.docs/verbatim-16-fullwidth-nested.lex
 
+# --- Footnotes / :: notes :: annotation (11 files) ---
+# New `:: notes ::` annotation samples from comms v0.14.0 split footnotes
+# out of the legacy element into an explicit notes-annotated list.
+# Tree-sitter parses preambles and reference-only docs as
+# DocumentTitle + Subtitle (same pattern as the document.docs divergences)
+# and treats `:: notes ::` blocks as ordinary annotations rather than
+# resolving footnote-list semantics. The pinned lex-cli (v0.6.0) predates
+# the annotation rework, compounding the mismatch. Acknowledged until
+# tree-sitter grows `:: notes ::` awareness or the lex-cli pin is bumped.
+comms/specs/elements/footnotes.docs/footnotes-01-reference-only.lex
+comms/specs/elements/footnotes.docs/footnotes-02-root-notes.lex
+comms/specs/elements/footnotes.docs/footnotes-03-session-wrapper.lex
+comms/specs/elements/footnotes.docs/footnotes-04-plain-notes-session.lex
+comms/specs/elements/footnotes.docs/footnotes-05-per-section-scope.lex
+comms/specs/elements/footnotes.docs/footnotes-06-out-of-order-refs.lex
+comms/specs/elements/footnotes.docs/footnotes-07-non-sequential-numbers.lex
+comms/specs/elements/footnotes.docs/footnotes-08-rich-definition-content.lex
+comms/specs/elements/footnotes.docs/footnotes-10-reorder-in-session.lex
+comms/specs/elements/footnotes.docs/footnotes-11-table-scoped.lex
+comms/specs/elements/footnotes.docs/footnotes-12-table-scope-does-not-leak.lex
+
 # --- Miscellaneous (4 files) ---
 # Dialog detection: dash-prefixed lines parsed as list items instead of dialog
 comms/specs/elements/paragraph.docs/paragraph-09-dialog.lex
