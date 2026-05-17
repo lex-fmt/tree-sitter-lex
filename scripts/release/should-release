@@ -10,7 +10,7 @@
 #
 # If ANY check fires → exit 0 with "yes: <reason>".
 # If neither fires   → exit 1 with "no: <reason>".
-# Hard errors        → exit 2.
+# Hard errors        → exit 2 with "error: <reason>" on stderr.
 #
 # No args. Composes with sibling primitives in this directory.
 set -euo pipefail
@@ -19,11 +19,22 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 cd "$REPO_ROOT"
 
+# Hard errors surface as exit 2 with a brief reason on stderr — silent
+# fall-throughs would hide tooling bugs and produce false "no, nothing to
+# release" answers that a release pipeline would happily act on.
+die() {
+  echo "error: $*" >&2
+  exit 2
+}
+
 # ----------------------------------------------------------------------
 # Check 1: own commits since latest vX.Y.Z tag.
 # ----------------------------------------------------------------------
-# Reuse the sibling primitive — empty stdout means no new commits.
-commits="$("$SCRIPT_DIR/get-commits-since-release" || true)"
+# Reuse the sibling primitive — empty stdout means no new commits. Any
+# non-zero exit from it is a tooling failure (bad git state, etc.) and we
+# surface it as a hard error rather than treating it as "no commits".
+commits="$("$SCRIPT_DIR/get-commits-since-release")" \
+  || die "get-commits-since-release failed"
 if [[ -n "$commits" ]]; then
   count="$(printf '%s\n' "$commits" | grep -c .)"
   echo "yes: $count commit(s) in this repo since latest release"
@@ -33,22 +44,25 @@ fi
 # ----------------------------------------------------------------------
 # Check 2: comms submodule stale relative to comms's latest release.
 # ----------------------------------------------------------------------
-# `git ls-tree HEAD comms` is read against the *committed* tree (not the
-# working tree / not the checked-out submodule HEAD) so this reflects what
-# would actually ship on a release cut.
-if [[ -d comms ]]; then
-  current_sub="$(git ls-tree HEAD comms 2>/dev/null | awk '{print $3}')"
-  if [[ -n "$current_sub" ]]; then
-    latest_comms_tag="$(gh release view --repo lex-fmt/comms --json tagName --jq .tagName 2>/dev/null || echo "")"
-    if [[ -n "$latest_comms_tag" ]]; then
-      # `gh api .../commits/<ref>` resolves any ref (including annotated tags,
-      # which point at a tag object, not the commit) down to the commit SHA.
-      latest_sha="$(gh api "repos/lex-fmt/comms/commits/$latest_comms_tag" --jq .sha 2>/dev/null || echo "")"
-      if [[ -n "$latest_sha" && "$current_sub" != "$latest_sha" ]]; then
-        echo "yes: comms submodule outdated (${current_sub:0:7} -> ${latest_sha:0:7} = $latest_comms_tag)"
-        exit 0
-      fi
-    fi
+# `git ls-tree HEAD comms` reads from the *committed* tree (not the working
+# tree, not the checked-out submodule HEAD) so this reflects what would
+# actually ship on a release cut. Empty output → submodule isn't recorded
+# at HEAD, which is a legitimate "no submodule to check" rather than an error.
+ls_tree_out="$(git ls-tree HEAD comms)" || die "git ls-tree HEAD comms failed"
+current_sub="$(printf '%s' "$ls_tree_out" | awk '{print $3}')"
+if [[ -n "$current_sub" ]]; then
+  # `gh release view` / `gh api` failures (auth, network, rate limit, missing
+  # release) are propagated as hard errors so the release pipeline doesn't
+  # silently green-light when GitHub is unreachable.
+  latest_comms_tag="$(gh release view --repo lex-fmt/comms --json tagName --jq .tagName)" \
+    || die "gh release view lex-fmt/comms failed"
+  # `gh api .../commits/<ref>` resolves any ref (including annotated tags,
+  # which point at a tag object rather than the commit) down to the commit SHA.
+  latest_sha="$(gh api "repos/lex-fmt/comms/commits/$latest_comms_tag" --jq .sha)" \
+    || die "gh api commits/$latest_comms_tag failed"
+  if [[ "$current_sub" != "$latest_sha" ]]; then
+    echo "yes: comms submodule outdated (${current_sub:0:7} -> ${latest_sha:0:7} = $latest_comms_tag)"
+    exit 0
   fi
 fi
 
