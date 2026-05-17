@@ -93,9 +93,10 @@ fi
 # (See e.g. lex-fmt/lexed for an Xvfb start, lex-fmt/nvim for pinned-bin
 # fetches.)
 
-# tree-sitter-lex ships package.json without a lockfile (the only npm deps
-# are tree-sitter-cli and bats, both pinned by caret range — no app deps
-# to lock). The canonical Node block above only installs when a lockfile
+# tree-sitter-lex ships package.json without a lockfile (the only npm
+# deps are tree-sitter-cli, bats, bats-assert, and bats-support — all
+# devDeps pinned by caret range, no app deps to lock). The canonical
+# Node block above only installs when a lockfile
 # is present, so without this fallback `node_modules/` stays empty and
 # every `npx tree-sitter …` invocation in scripts/test-all bails out with
 # "could not determine executable to run". Plain `npm install` is the
