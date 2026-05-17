@@ -100,7 +100,9 @@ fi
 # skips this repo. Run `npm install` directly so `npx tree-sitter` and
 # `npx bats` resolve in cloud sessions.
 if [ -f package.json ] && command -v npm >/dev/null 2>&1; then
-  npm install --no-audit --no-fund --silent || npm install
+  npm install --no-audit --no-fund --silent \
+    || npm install \
+    || echo "warning: npm install failed — scripts/test-all will fail" >&2
 fi
 
 exit 0
