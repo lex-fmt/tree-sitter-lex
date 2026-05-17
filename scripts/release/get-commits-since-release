@@ -21,7 +21,8 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 cd "$REPO_ROOT"
 
 # Pick the highest semver tag matching vX.Y.Z. `--sort=-v:refname` orders
-# tags by version descending; head -n1 grabs the most recent.
+# tags by version descending (semver, not commit date — matches the convention
+# agreed in lex-fmt/lex#640); head -n1 grabs the highest.
 LAST_TAG="$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname \
   | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' \
   | head -n1 || true)"
@@ -33,9 +34,10 @@ else
   RANGE="${LAST_TAG}..HEAD"
 fi
 
-git log --pretty=format:'%h %s' "$RANGE"
-# Ensure trailing newline even when git log omits it on non-empty output.
-# (git log --pretty doesn't print a trailing \n; empty output stays empty.)
-if [[ -n "$(git log --pretty=format:'%h' "$RANGE")" ]]; then
-  echo
+# One `git log` invocation: capture, print, and use the same bytes to decide
+# whether a trailing newline is needed. (`git log --pretty` doesn't emit a
+# trailing \n on non-empty output, and stays empty when nothing matches.)
+LOG_OUTPUT="$(git log --pretty=format:'%h %s' "$RANGE")"
+if [[ -n "$LOG_OUTPUT" ]]; then
+  printf '%s\n' "$LOG_OUTPUT"
 fi
