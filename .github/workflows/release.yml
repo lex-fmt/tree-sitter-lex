@@ -90,3 +90,29 @@ jobs:
           body: ${{ steps.notes.outputs.body }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Layer 2 of cross-repo release automation (lex-fmt/lex#640). After a
+  # successful release, notify editor repos that pin tree-sitter (via
+  # shared/lex-deps.json) so they run their on-upstream-released
+  # handler. Editors also receive an event from lex releasing; whichever
+  # event arrives later is the one that actually drives the editor cut.
+  notify-downstreams:
+    needs: release
+    if: success()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify downstream editors
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          VERSION: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          for repo in lex-fmt/vscode lex-fmt/nvim lex-fmt/lexed; do
+            echo "Notifying $repo of tree-sitter-lex@$VERSION"
+            gh api "repos/$repo/dispatches" --method POST \
+              -f event_type=upstream-released \
+              -F "client_payload[source]=tree-sitter-lex" \
+              -F "client_payload[version]=$VERSION" \
+              -F "client_payload[ts]=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+              -F "client_payload[run_url]=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          done
