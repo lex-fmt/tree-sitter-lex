@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.10.3 (2026-05-17)
+
+- (no release notes recorded)
+
 ## v0.10.2 (2026-05-17)
 
 - (no release notes recorded)
