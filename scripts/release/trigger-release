@@ -12,10 +12,10 @@
 # ------------------
 # This repo's release CI (.github/workflows/release.yml) is wired to:
 #     on: push: tags: [v*]
-# so the trigger is simply: create an annotated-or-lightweight `vX.Y.Z` tag
-# on the current HEAD (expected to be the merged version-bump commit on
-# `main`) and push it to `origin`. CI takes over from there — building the
-# tree-sitter.tar.gz release artifact and publishing the GitHub release.
+# so the trigger is simply: create an annotated `vX.Y.Z` tag on the current
+# HEAD (expected to be the merged version-bump commit on `main`) and push
+# it to `origin`. CI takes over from there — building the tree-sitter.tar.gz
+# release artifact and publishing the GitHub release.
 #
 # Contract
 # --------
@@ -23,7 +23,7 @@
 # - Side effects: creates local tag `vX.Y.Z`, pushes it to `origin`.
 # - Exit codes:
 #     0  tag created + pushed
-#     1  tag already exists locally (refuse to clobber)
+#     1  tag already exists locally or on origin (refuse to clobber)
 #     2  bad usage / malformed version
 #
 # This is intentionally dumb: it does not bump versions, does not edit
@@ -42,16 +42,20 @@ usage() {
 
 [[ $# -ne 1 ]] && { usage; exit 2; }
 NEW_VERSION="$1"
-[[ ! "$NEW_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] && { echo "error: version must be X.Y.Z" >&2; exit 2; }
+[[ ! "$NEW_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$ ]] && { echo "error: version must be X.Y.Z" >&2; exit 2; }
 
 TAG="v$NEW_VERSION"
 if git rev-parse "$TAG" >/dev/null 2>&1; then
   echo "error: tag $TAG already exists locally — delete it or pick a new version" >&2
   exit 1
 fi
+if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
+  echo "error: tag $TAG already exists on origin — pick a new version" >&2
+  exit 1
+fi
 
 echo "Tagging $TAG on $(git rev-parse --short HEAD)..."
-git tag "$TAG"
+git tag -a "$TAG" -m "Release $TAG"
 echo "Pushing $TAG to origin..."
 git push origin "$TAG"
 echo "Done. CI should pick it up shortly."
