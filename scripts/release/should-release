@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+# should-release — Layer 0 release primitive (lex-fmt/lex#640).
+#
+# Decides whether tree-sitter-lex needs a new release by combining two checks:
+#
+#   1. Own commits: any new commits since the last vX.Y.Z tag?
+#      (delegated to `get-commits-since-release`)
+#   2. comms submodule stale: does the SHA the `comms` submodule points at
+#      match the commit SHA of comms's latest release tag?
+#
+# If ANY check fires → exit 0 with "yes: <reason>".
+# If neither fires   → exit 1 with "no: <reason>".
+# Hard errors        → exit 2.
+#
+# No args. Composes with sibling primitives in this directory.
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+cd "$REPO_ROOT"
+
+# ----------------------------------------------------------------------
+# Check 1: own commits since latest vX.Y.Z tag.
+# ----------------------------------------------------------------------
+# Reuse the sibling primitive — empty stdout means no new commits.
+commits="$("$SCRIPT_DIR/get-commits-since-release" || true)"
+if [[ -n "$commits" ]]; then
+  count="$(printf '%s\n' "$commits" | grep -c .)"
+  echo "yes: $count commit(s) in this repo since latest release"
+  exit 0
+fi
+
+# ----------------------------------------------------------------------
+# Check 2: comms submodule stale relative to comms's latest release.
+# ----------------------------------------------------------------------
+# `git ls-tree HEAD comms` is read against the *committed* tree (not the
+# working tree / not the checked-out submodule HEAD) so this reflects what
+# would actually ship on a release cut.
+if [[ -d comms ]]; then
+  current_sub="$(git ls-tree HEAD comms 2>/dev/null | awk '{print $3}')"
+  if [[ -n "$current_sub" ]]; then
+    latest_comms_tag="$(gh release view --repo lex-fmt/comms --json tagName --jq .tagName 2>/dev/null || echo "")"
+    if [[ -n "$latest_comms_tag" ]]; then
+      # `gh api .../commits/<ref>` resolves any ref (including annotated tags,
+      # which point at a tag object, not the commit) down to the commit SHA.
+      latest_sha="$(gh api "repos/lex-fmt/comms/commits/$latest_comms_tag" --jq .sha 2>/dev/null || echo "")"
+      if [[ -n "$latest_sha" && "$current_sub" != "$latest_sha" ]]; then
+        echo "yes: comms submodule outdated (${current_sub:0:7} -> ${latest_sha:0:7} = $latest_comms_tag)"
+        exit 0
+      fi
+    fi
+  fi
+fi
+
+echo "no: own repo and comms submodule both up-to-date"
+exit 1
