@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# get-current-version — print this repo's current version to stdout (bare,
+# no leading `v`). Exits 0 on success.
+#
+# Layer 0 release primitive — see lex-fmt/lex#640. Sister scripts:
+#   - get-commits-since-release : commits since most recent vX.Y.Z tag
+#   - update-release <version>  : apply <version> to all version-bearing files
+#
+# Source of truth for tree-sitter-lex: `package.json` `"version"` field. The
+# repo's `tree-sitter.json` also carries a `metadata.version`; `update-release`
+# keeps it in sync.
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+
+jq -r .version "$REPO_ROOT/package.json"
