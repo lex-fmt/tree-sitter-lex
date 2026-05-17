@@ -93,4 +93,14 @@ fi
 # (See e.g. lex-fmt/lexed for an Xvfb start, lex-fmt/nvim for pinned-bin
 # fetches.)
 
+# tree-sitter-lex pins `package-lock.json` in .gitignore (the parser is
+# the artifact; the npm deps are dev-only tooling — tree-sitter CLI and
+# bats — and a committed lockfile would just be noise to bump). The
+# canonical node-install step above gates on a lockfile and therefore
+# skips this repo. Run `npm install` directly so `npx tree-sitter` and
+# `npx bats` resolve in cloud sessions.
+if [ -f package.json ] && command -v npm >/dev/null 2>&1; then
+  npm install --no-audit --no-fund --silent || npm install
+fi
+
 exit 0
