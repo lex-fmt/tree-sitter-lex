@@ -62,11 +62,11 @@ npx tree-sitter test           # run corpus tests (test/corpus/*.txt)
 ### Parity testing
 
 The parity check compares tree-sitter's CST with lex-core's AST to verify
-structural agreement. It requires the `lex` CLI binary:
+structural agreement. It requires the `lexd` CLI binary:
 
 ```sh
-./scripts/download-lex-cli.sh  # download pinned lex-cli version
-LEX_CLI_PATH=./bin/lex ./scripts/parity-check.sh
+./scripts/download-lexd-cli.sh   # download pinned lexd version
+LEX_CLI_PATH=./bin/lexd ./scripts/test-all
 ```
 
 ### Pre-commit hook
@@ -75,7 +75,7 @@ LEX_CLI_PATH=./bin/lex ./scripts/parity-check.sh
 ln -sf ../../scripts/pre-commit .git/hooks/pre-commit
 ```
 
-Runs: generate, corpus tests, error-check. Parity check runs if `lex` is available.
+Runs: generate, corpus tests, error-check. Parity check runs if `lexd` is available.
 
 ### Architecture: two parsers, different jobs
 

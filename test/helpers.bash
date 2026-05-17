@@ -19,14 +19,19 @@ assert_no_errors() {
 }
 
 # Compare tree-sitter parity output with lex-core.
-# Requires LEX_CLI to be set (test-all handles this).
+# Requires LEX_CLI to be set (test-all handles this; the variable points at the
+# lexd binary).
 assert_parity() {
     local file="$1"
     local lex_output="" ts_output=""
 
-    lex_output="$("$LEX_CLI" inspect "$REPO_DIR/$file" parity 2>/dev/null || :)"
+    # --no-includes keeps lexd from trying to resolve `:: lex.include ::`
+    # annotations during parity inspection. Tree-sitter is a syntactic parser
+    # and doesn't resolve includes, so we want the unresolved view from lexd
+    # too. Without this flag, include fixtures with non-existent targets abort.
+    lex_output="$("$LEX_CLI" inspect "$REPO_DIR/$file" parity --no-includes 2>/dev/null || :)"
     if [[ -z "$lex_output" ]]; then
-        echo "lex-cli produced no output for $file" >&2
+        echo "lexd produced no output for $file" >&2
         return 1
     fi
 

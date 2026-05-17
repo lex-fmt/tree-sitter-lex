@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- Bumped `lex` CLI pin past the v0.7.0 → v0.8.0 binary rename to `lexd` v0.14.1 in `shared/lex-deps.json` (now keyed as `lexd-cli`). `scripts/download-lex-cli.sh` renamed to `scripts/download-lexd-cli.sh`, fetches `lexd-<target>.tar.gz` and extracts the `lexd` binary from the directory-wrapped archive layout introduced in v0.8.0+. Parity harness (`scripts/test-all`, `test/helpers.bash`) updated to look for `bin/lexd` and to pass `--no-includes` to `lexd inspect` so include fixtures with non-existent targets don't abort. (#29)
+- Bumped `comms` submodule to v0.16.2 (adds `lex.include.docs/` per-form sample set, plus several other docs and fixture updates).
+- `scripts/parity-ignored.txt` re-baselined against `lexd` v0.14.1 and comms v0.16.2: removed 13 previously-acknowledged divergences that the bump closes (3 verbatim, 10 table); added 6 new acknowledged divergences (2 annotation alias resolution, 1 pipe-row content classification, 3 indented `lex.include` annotations inside sessions).
+
 ## v0.10.1 (2026-05-02)
 
 ### Added
