@@ -8,14 +8,11 @@
 #
 # Format: relative path from repo root. # comments and blank lines ignored.
 
-# --- VerbatimBlock not recognized (5 files) ---
+# --- VerbatimBlock not recognized (2 files) ---
 # Tree-sitter has no working verbatim block rule. Subject + indented content +
 # :: label :: is parsed as Session + Paragraph + Annotation instead of
-# VerbatimBlock. Largest single category of divergence.
+# VerbatimBlock.
 comms/specs/elements/verbatim.docs/verbatim-02-flat-with-caption.lex
-comms/specs/elements/verbatim.docs/verbatim-03-flat-with-params.lex
-comms/specs/elements/verbatim.docs/verbatim-05-flat-special-chars.lex
-comms/specs/elements/verbatim.docs/verbatim-09-flat-simple-beyong-wall.lex
 comms/specs/elements/verbatim.docs/verbatim-11-group-shell.lex
 # --- VerbatimGroup item structure (2 files) ---
 # Tree-sitter emits VerbatimGroupItem nodes nested inside a group; lex-core
@@ -35,21 +32,12 @@ comms/specs/elements/annotation.docs/annotation-27-attachment-example-l-multiple
 comms/specs/elements/annotation.docs/annotation-28-attachment-example-j-session-inner.lex
 comms/specs/elements/annotation.docs/annotation-29-attachment-example-k-session-container.lex
 
-# --- Table vs Definition divergence (10 files) ---
-# lex-core detects pipe-row content as Table nodes; tree-sitter sees them as
-# Definition nodes (tables are definitions with pipe-row body in the CST).
-# This is the core architectural divergence: two-parser design means the CST
-# does not have a dedicated Table node type.
-comms/specs/elements/table.docs/table-01-flat-minimal.lex
-comms/specs/elements/table.docs/table-02-flat-with-alignment.lex
-comms/specs/elements/table.docs/table-07-flat-separator-lines.lex
-comms/specs/elements/table.docs/table-08-nested-in-definition.lex
-comms/specs/elements/table.docs/table-09-nested-in-list.lex
-comms/specs/elements/table.docs/table-10-nested-deep.lex
-comms/specs/elements/table.docs/table-13-flat-mismatched-rows.lex
-comms/specs/elements/table.docs/table-14-flat-empty-cells.lex
-comms/specs/elements/table.docs/table-15-flat-single-row.lex
-comms/specs/elements/table.docs/table-16-flat-no-header.lex
+# --- Annotation alias resolution (2 files) ---
+# lexd v0.14+ expands short annotation labels to their canonical aliases in
+# parity output (e.g. `:: author ::` → `lex.metadata.author`). Tree-sitter
+# is a syntactic parser and preserves the raw label.
+comms/specs/elements/document.docs/document-04-title-with-annotations.lex
+comms/specs/elements/document.docs/document-09-subtitle-with-annotations.lex
 
 # --- Table span marker serialization (4 files) ---
 # Tree-sitter preserves raw >> and ^^ cell-spanning markers; lex-core
@@ -80,6 +68,11 @@ comms/specs/elements/table.docs/table-06-flat-with-footnotes.lex
 comms/specs/elements/table.docs/table-11-fullwidth.lex
 comms/specs/elements/table.docs/table-12-fullwidth-nested.lex
 
+# --- Pipe-row content classification (1 file) ---
+# Tree-sitter sees a definition with pipe-row body as VerbatimBlock when the
+# body contains unresolved footnote refs; lexd classifies it as Table.
+comms/specs/elements/footnotes.docs/footnotes-09-table-cell-ref-unresolved.lex
+
 # --- DocumentTitle/Subtitle confusion (5 files) ---
 # Tree-sitter parses first line + continuation as DocumentTitle + Subtitle
 # when lex-core sees a Paragraph or Definition. Context-dependent
@@ -91,14 +84,12 @@ comms/specs/elements/document.docs/document-08-subtitle-with-inlines.lex
 comms/specs/elements/verbatim.docs/verbatim-16-fullwidth-nested.lex
 
 # --- Footnotes / :: notes :: annotation (11 files) ---
-# New `:: notes ::` annotation samples from comms v0.14.0 split footnotes
-# out of the legacy element into an explicit notes-annotated list.
-# Tree-sitter parses preambles and reference-only docs as
-# DocumentTitle + Subtitle (same pattern as the document.docs divergences)
-# and treats `:: notes ::` blocks as ordinary annotations rather than
-# resolving footnote-list semantics. The pinned lex-cli (v0.6.0) predates
-# the annotation rework, compounding the mismatch. Acknowledged until
-# tree-sitter grows `:: notes ::` awareness or the lex-cli pin is bumped.
+# `:: notes ::` annotation samples from comms v0.14.0 split footnotes out of
+# the legacy element into an explicit notes-annotated list. Tree-sitter
+# parses preambles and reference-only docs as DocumentTitle + Subtitle (same
+# pattern as the document.docs divergences) and treats `:: notes ::` blocks
+# as ordinary annotations rather than resolving footnote-list semantics.
+# Acknowledged until tree-sitter grows `:: notes ::` awareness.
 comms/specs/elements/footnotes.docs/footnotes-01-reference-only.lex
 comms/specs/elements/footnotes.docs/footnotes-02-root-notes.lex
 comms/specs/elements/footnotes.docs/footnotes-03-session-wrapper.lex
@@ -110,6 +101,17 @@ comms/specs/elements/footnotes.docs/footnotes-08-rich-definition-content.lex
 comms/specs/elements/footnotes.docs/footnotes-10-reorder-in-session.lex
 comms/specs/elements/footnotes.docs/footnotes-11-table-scoped.lex
 comms/specs/elements/footnotes.docs/footnotes-12-table-scope-does-not-leak.lex
+
+# --- lex.include annotations inside sessions (3 files) ---
+# Indented `:: lex.include src="..." ::` annotations inside a Session: lexd
+# (with --no-includes) suppresses them in parity output, while tree-sitter
+# preserves them as Annotation nodes -- or, in the multiple-siblings case,
+# parses the first as a Paragraph instead of an Annotation. The parity
+# harness passes --no-includes because the fixture src= targets don't exist
+# in the comms tree.
+comms/specs/elements/lex.include.docs/lex.include-04-multiple-siblings.lex
+comms/specs/elements/lex.include.docs/lex.include-05-inside-session.lex
+comms/specs/elements/lex.include.docs/lex.include-06-fragment-include.lex
 
 # --- Miscellaneous (4 files) ---
 # Dialog detection: dash-prefixed lines parsed as list items instead of dialog

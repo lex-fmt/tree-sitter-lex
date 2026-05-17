@@ -19,7 +19,7 @@ scripts/
   test-tree-shape   Corpus tests (tree structure correctness)
   parity-print.js   Converts tree-sitter XML to parity format
   parity-ignored.txt  Acknowledged parity divergences (bats skip)
-  download-lex-cli.sh  Downloads lex-cli binary
+  download-lexd-cli.sh Downloads lexd binary
 test/
   corpus/           Tree-sitter corpus tests (test-tree-shape)
   helpers.bash      Shared bats helpers (assert_no_errors, assert_parity)
@@ -27,7 +27,7 @@ test/
   generated/        Auto-generated .bats files (gitignored)
 comms/              Submodule → lex-fmt/comms (grammar specs, test fixtures)
 shared/
-  lex-deps.json     Pins lex-cli version
+  lex-deps.json     Pins lexd version
 ```
 
 ## Development

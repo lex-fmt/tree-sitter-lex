@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Downloads lex-cli binary from GitHub releases for parity testing.
+# Downloads the lexd CLI binary from GitHub releases for parity testing.
 # Reads version from shared/lex-deps.json.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -14,8 +14,8 @@ if [[ ! -f "$DEPS_FILE" ]]; then
     exit 1
 fi
 
-LEX_VERSION="$(jq -r '.["lex-cli"]' "$DEPS_FILE")"
-LEX_REPO="$(jq -r '.["lex-cli-repo"]' "$DEPS_FILE")"
+LEXD_VERSION="$(jq -r '.["lexd-cli"]' "$DEPS_FILE")"
+LEXD_REPO="$(jq -r '.["lexd-cli-repo"]' "$DEPS_FILE")"
 
 # Detect platform
 OS="$(uname -s)"
@@ -28,8 +28,6 @@ case "$OS" in
             aarch64) TARGET="aarch64-unknown-linux-gnu" ;;
             *)       echo "Unsupported Linux arch: $ARCH" >&2; exit 1 ;;
         esac
-        ARCHIVE_EXT="tar.gz"
-        BINARY_NAME="lex"
         ;;
     Darwin)
         case "$ARCH" in
@@ -37,8 +35,6 @@ case "$OS" in
             arm64)   TARGET="aarch64-apple-darwin" ;;
             *)       echo "Unsupported macOS arch: $ARCH" >&2; exit 1 ;;
         esac
-        ARCHIVE_EXT="tar.gz"
-        BINARY_NAME="lex"
         ;;
     *)
         echo "Unsupported OS: $OS" >&2
@@ -46,19 +42,21 @@ case "$OS" in
         ;;
 esac
 
-ARCHIVE_NAME="lex-${TARGET}.${ARCHIVE_EXT}"
+ARCHIVE_BASENAME="lexd-${TARGET}"
+ARCHIVE_NAME="${ARCHIVE_BASENAME}.tar.gz"
+BINARY_NAME="lexd"
 OUTPUT="$BIN_DIR/$BINARY_NAME"
 
 # Check if already downloaded
 if [[ -f "$OUTPUT" ]]; then
-    echo "lex-cli already exists at $OUTPUT"
+    echo "lexd already exists at $OUTPUT"
     echo "$OUTPUT"
     exit 0
 fi
 
-echo "Downloading lex-cli $LEX_VERSION for $TARGET..."
+echo "Downloading lexd $LEXD_VERSION for $TARGET..."
 
-DOWNLOAD_URL="https://github.com/${LEX_REPO}/releases/download/${LEX_VERSION}/${ARCHIVE_NAME}"
+DOWNLOAD_URL="https://github.com/${LEXD_REPO}/releases/download/${LEXD_VERSION}/${ARCHIVE_NAME}"
 
 mkdir -p "$BIN_DIR"
 TMP_DIR="$(mktemp -d)"
@@ -75,9 +73,22 @@ if ! curl "${CURL_OPTS[@]}" "$DOWNLOAD_URL"; then
 fi
 
 tar -xzf "$TMP_DIR/$ARCHIVE_NAME" -C "$TMP_DIR"
-cp "$TMP_DIR/$BINARY_NAME" "$OUTPUT"
+
+# v0.8.0+ archives expand to a directory (lexd-<target>/lexd); older lex
+# archives put the binary at the archive root. Handle both layouts.
+if [[ -f "$TMP_DIR/$ARCHIVE_BASENAME/$BINARY_NAME" ]]; then
+    SRC="$TMP_DIR/$ARCHIVE_BASENAME/$BINARY_NAME"
+elif [[ -f "$TMP_DIR/$BINARY_NAME" ]]; then
+    SRC="$TMP_DIR/$BINARY_NAME"
+else
+    echo "Could not find $BINARY_NAME binary in archive" >&2
+    rm -rf "$TMP_DIR"
+    exit 1
+fi
+
+cp "$SRC" "$OUTPUT"
 chmod +x "$OUTPUT"
 rm -rf "$TMP_DIR"
 
-echo "lex-cli $LEX_VERSION installed to $OUTPUT"
+echo "lexd $LEXD_VERSION installed to $OUTPUT"
 echo "$OUTPUT"

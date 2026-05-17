@@ -60,23 +60,26 @@ fi
 
 # --- 5. Parity (bats) ---
 if ! $QUICK; then
-    # Ensure lex-cli is available
+    # Ensure lexd is available
     export LEX_CLI="${LEX_CLI_PATH:-}"
-    if [[ -z "$LEX_CLI" ]] && [[ -f "$REPO_DIR/bin/lex" ]]; then
-        LEX_CLI="$REPO_DIR/bin/lex"
+    if [[ -z "$LEX_CLI" ]] && [[ -f "$REPO_DIR/bin/lexd" ]]; then
+        LEX_CLI="$REPO_DIR/bin/lexd"
     fi
     if [[ -z "$LEX_CLI" ]]; then
         echo ""
-        echo "Downloading lex-cli..."
-        LEX_CLI=$("$SCRIPT_DIR/download-lex-cli.sh" 2>/dev/null | tail -1)
+        echo "Downloading lexd..."
+        # Don't redirect stderr: download failures (curl 404, missing jq, etc.)
+        # should be visible. The `|| :` keeps `set -e` from killing the script
+        # so the empty-LEX_CLI check below can report the failure properly.
+        LEX_CLI=$("$SCRIPT_DIR/download-lexd-cli.sh" | tail -1) || :
     fi
     if [[ -z "$LEX_CLI" ]] || [[ ! -x "$LEX_CLI" ]]; then
-        echo "Error: could not obtain lex-cli binary." >&2
+        echo "Error: could not obtain lexd binary." >&2
         FAILED=true
     else
         export LEX_CLI
         echo ""
-        echo "═══ test-parity (lex-cli: $($LEX_CLI --version 2>&1)) ═══"
+        echo "═══ test-parity (lexd: $($LEX_CLI --version 2>&1)) ═══"
         echo ""
         if npx bats test/generated/parity.bats; then
             true
