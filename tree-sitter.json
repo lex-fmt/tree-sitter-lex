@@ -5,13 +5,15 @@
       "camelcase": "Lex",
       "scope": "source.lex",
       "path": ".",
-      "file-types": ["lex"],
+      "file-types": [
+        "lex"
+      ],
       "highlights": "queries/highlights.scm",
       "injections": "queries/injections.scm"
     }
   ],
   "metadata": {
-    "version": "0.6.0",
+    "version": "0.8.1",
     "license": "MIT",
     "description": "Tree-sitter grammar for the Lex document format",
     "authors": [
