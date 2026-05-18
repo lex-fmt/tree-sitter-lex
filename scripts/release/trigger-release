@@ -8,54 +8,52 @@
 # script (Layer 1, lives in arthur-debert/release) calls this after a
 # version-bump PR has been merged on `main` to actually fire the release.
 #
-# Strategy: tag-push
-# ------------------
+# Strategy: workflow_dispatch
+# ---------------------------
 # This repo's release CI (.github/workflows/release.yml) is wired to:
-#     on: push: tags: [v*]
-# so the trigger is simply: create an annotated `vX.Y.Z` tag on the current
-# HEAD (expected to be the merged version-bump commit on `main`) and push
-# it to `origin`. CI takes over from there — building the tree-sitter.tar.gz
-# release artifact and publishing the GitHub release.
+#     on: workflow_dispatch
+# matching the cross-repo cascade-handler trigger contract. It is a thin
+# caller of arthur-debert/release/.github/workflows/tree-sitter.yml@v1
+# which handles the version bump, changelog roll, tag + push, build, and
+# GH release. No local tag-and-push needed.
+#
+# Migration note (2026-05-18): previously this primitive used the
+# tag-push strategy. The migration to release@v1.6.0 moved the trigger
+# contract to workflow_dispatch — same as vscode, mkdocs-lex, and the
+# rest of the lex-release cascade.
 #
 # Contract
 # --------
-# - Input:  a single bare semver string (e.g. `0.10.2`, NO leading `v`).
-# - Side effects: creates local tag `vX.Y.Z`, pushes it to `origin`.
+# - Input:  a single bare semver string (e.g. `0.11.0`, NO leading `v`).
+# - Side effects: fires the release workflow_dispatch event.
 # - Exit codes:
-#     0  tag created + pushed
-#     1  tag already exists locally or on origin (refuse to clobber)
+#     0  workflow_dispatch event fired
+#     1  gh CLI missing or workflow dispatch errored
 #     2  bad usage / malformed version
-#
-# This is intentionally dumb: it does not bump versions, does not edit
-# files, does not consult CHANGELOG. All of that is the orchestrator's job
-# (and the version-bump PR's job). This primitive just fires the trigger.
 #
 # Sibling primitives in this repo: get-current-version,
 # get-commits-since-release, update-release.
 
 set -euo pipefail
 
+if ! command -v gh >/dev/null 2>&1; then
+  echo "error: gh is required but not installed" >&2
+  exit 1
+fi
+
 usage() {
   echo "Usage: $(basename "$0") <new-version>" >&2
-  echo "  new-version   Bare semver string, e.g. 0.8.1 (no leading v)" >&2
+  echo "  new-version   Bare semver string, e.g. 0.11.0 (no leading v)" >&2
 }
 
 [[ $# -ne 1 ]] && { usage; exit 2; }
 NEW_VERSION="$1"
-[[ ! "$NEW_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$ ]] && { echo "error: version must be X.Y.Z" >&2; exit 2; }
-
-TAG="v$NEW_VERSION"
-if git rev-parse "$TAG" >/dev/null 2>&1; then
-  echo "error: tag $TAG already exists locally — delete it or pick a new version" >&2
-  exit 1
-fi
-if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
-  echo "error: tag $TAG already exists on origin — pick a new version" >&2
-  exit 1
+if ! [[ "${NEW_VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$ ]]; then
+  echo "error: version must be X.Y.Z[-PRERELEASE]" >&2
+  exit 2
 fi
 
-echo "Tagging $TAG on $(git rev-parse --short HEAD)..."
-git tag -a "$TAG" -m "Release $TAG"
-echo "Pushing $TAG to origin..."
-git push origin "$TAG"
+echo "Triggering release workflow for v${NEW_VERSION}..."
+gh workflow run release.yml -f "version=${NEW_VERSION}"
 echo "Done. CI should pick it up shortly."
+echo "Watch: gh run list --workflow=release.yml --limit 1"
