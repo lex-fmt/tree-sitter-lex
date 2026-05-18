@@ -5,11 +5,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.10.4] - 2026-05-18
+
+
 ### Changed
 
 - Release pipeline migrated to `arthur-debert/release/.github/workflows/tree-sitter.yml@v1` (see #42). Trigger contract is now `workflow_dispatch` (matches the cross-repo cascade-handler pattern). Corpus tests run as a release-time gate before the tag is pushed; missing WASM or empty `queries/` now hard-fails the build rather than producing a silently-incomplete tarball.
 - CHANGELOG.md reformatted to strict Keep-a-Changelog spec (bracketed `[Unreleased]` / `[X.Y.Z] - DATE` headings) so the canonical `prepare-release-npm` composite action can auto-roll release notes.
-
 ## [0.10.3] - 2026-05-17
 
 - (no release notes recorded)
