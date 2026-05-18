@@ -18,9 +18,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 - (no release notes recorded)
 
-## [0.10.1.5] - unreleased
+## Historical (pre-migration unrolled section)
 
-The `lex` CLI rename to `lexd` work below was prepared as an unrolled `## Unreleased` section in the pre-Keep-a-Changelog format and never cut as its own version. Preserved here for history.
+The `lex` CLI rename to `lexd` work below was prepared as an unrolled `## Unreleased` section in the pre-Keep-a-Changelog format and never cut as its own version. Preserved here for history. The non-bracketed heading is intentional — `prepare-release-npm`'s `roll-changelog.sh` only matches `^## \[` so this section is invisible to release automation.
 
 ### Changed
 
