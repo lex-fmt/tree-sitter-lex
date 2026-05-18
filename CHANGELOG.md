@@ -1,14 +1,26 @@
 # Changelog
 
-## v0.10.3 (2026-05-17)
+All notable changes to this project are documented in this file.
+The format is based on [Keep a Changelog](https://keepachangelog.com/).
+
+## [Unreleased]
+
+### Changed
+
+- Release pipeline migrated to `arthur-debert/release/.github/workflows/tree-sitter.yml@v1` (see #42). Trigger contract is now `workflow_dispatch` (matches the cross-repo cascade-handler pattern). Corpus tests run as a release-time gate before the tag is pushed; missing WASM or empty `queries/` now hard-fails the build rather than producing a silently-incomplete tarball.
+- CHANGELOG.md reformatted to strict Keep-a-Changelog spec (bracketed `[Unreleased]` / `[X.Y.Z] - DATE` headings) so the canonical `prepare-release-npm` composite action can auto-roll release notes.
+
+## [0.10.3] - 2026-05-17
 
 - (no release notes recorded)
 
-## v0.10.2 (2026-05-17)
+## [0.10.2] - 2026-05-17
 
 - (no release notes recorded)
 
-## Unreleased
+## Historical (pre-migration unrolled section)
+
+The `lex` CLI rename to `lexd` work below was prepared as an unrolled `## Unreleased` section in the pre-Keep-a-Changelog format and never cut as its own version. Preserved here for history. The non-bracketed heading is intentional — `prepare-release-npm`'s `roll-changelog.sh` only matches `^## \[` so this section is invisible to release automation.
 
 ### Changed
 
@@ -16,7 +28,7 @@
 - Bumped `comms` submodule to v0.16.2 (adds `lex.include.docs/` per-form sample set, plus several other docs and fixture updates).
 - `scripts/parity-ignored.txt` re-baselined against `lexd` v0.14.1 and comms v0.16.2: removed 13 previously-acknowledged divergences that the bump closes (3 verbatim, 10 table); added 6 new acknowledged divergences (2 annotation alias resolution, 1 pipe-row content classification, 3 indented `lex.include` annotations inside sessions).
 
-## v0.10.1 (2026-05-02)
+## [0.10.1] - 2026-05-02
 
 ### Added
 
@@ -28,7 +40,7 @@
 - Bumped `comms` submodule to v0.15.0 (catches up several minor releases — v0.12, v0.13, v0.14, v0.15 — including: structural-parser escape rule docs, table cell nesting docs, font ligatures + Unicode symbols doc, EDITORS.lex parity reference, footnotes.docs per-form sample set, includes feature proposal, footnote-table-scope sample, `:: notes ::` annotation spec split out from footnotes, annotation reference syntax `[::label]`, redundant `:: lex ::` wrapper cleanup, and the canonical Lex monochrome theme at `shared/theming/`).
 - `scripts/parity-ignored.txt`: acknowledged 11 new parity divergences from the comms `footnotes.docs/` per-form sample set (DocumentTitle/Subtitle confusion + `:: notes ::` annotation handling, mirroring existing acknowledged categories). Tree-sitter has not yet grown `:: notes ::` awareness; the pinned lex-cli (v0.6.0) also predates the annotation rework.
 
-## v0.10.0 (2026-04-26)
+## [0.10.0] - 2026-04-26
 
 - Added `shared/embedded-grammars.json`: a curated manifest of tree-sitter
   grammars editor packagers should bundle to render `:: lang ::` injection
@@ -41,7 +53,7 @@
   into both the CI workflow and the release pipeline so a broken upstream
   pin fails fast rather than at downstream build time.
 
-## v0.9.1 (2026-04-24)
+## [0.9.1] - 2026-04-24
 
 ### Added
 
