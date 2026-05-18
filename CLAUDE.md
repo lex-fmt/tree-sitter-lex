@@ -66,8 +66,11 @@ Install: `ln -sf ../../scripts/pre-commit .git/hooks/pre-commit`
 
 ## Releasing
 
-Tag with `vX.Y.Z` and push. CI builds `tree-sitter.tar.gz` with parser
-sources, WASM module, and query files. Editor repos download this artifact.
+This repo participates in the lex release cascade. Cutting a release here is triggered automatically when comms releases (via the `on-upstream-released` handler workflow). Once cut, it cascades to vscode + nvim + lexed via `notify-downstreams`.
+
+For a manual cut: push an annotated tag (`git tag -a vX.Y.Z -m "..." && git push origin vX.Y.Z`). CI builds `tree-sitter.tar.gz` (parser sources, WASM module, query files); editor repos download this artifact via `shared/lex-deps.json`.
+
+Design + ops + gotchas: [arthur-debert/release/docs/lex-release-cascade.md](https://github.com/arthur-debert/release/blob/main/docs/lex-release-cascade.md).
 
 ## Architecture
 
