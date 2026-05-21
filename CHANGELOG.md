@@ -5,6 +5,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-05-21
+
+
 ### Changed
 
 - Spell-check captures in `queries/highlights.scm` rewritten to match the canonical policy: spell-check all prose by default; suppress only annotation labels/params, verbatim bodies, references, and non-prose inline atoms (code spans, math spans, escape sequences). Verbatim block *subjects* and the trailing descriptor after `:: label ::` are now spell-checked. Uses `#has-ancestor?` + `#not-has-parent?` so the verbatim's own subject field stays prose-checked while nested prose inside the body is suppressed at arbitrary depth (#45).
@@ -12,7 +15,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 ### Added
 
 - `test/spellcheck-fixture.lex` — a fixture with deliberate typos seeded at every prose / non-prose position. Downstream editor e2e tests (`nvim`, `lexed`, `vscode`, `zed-lex`) mirror this file and assert against the same matrix (#45).
-
 ## [0.10.4] - 2026-05-18
 
 
