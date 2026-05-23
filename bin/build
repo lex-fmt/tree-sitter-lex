@@ -3,24 +3,22 @@ set -euo pipefail
 
 # Canonical tree-sitter build entry point. Same script local + CI.
 #
-# Builds the WASM artifact via `npx tree-sitter build --wasm`. Produces
-# `tree-sitter-<name>.wasm` in the repo root. The release-time
-# tree-sitter.yml@v1 workflow runs the same command then assembles the
-# canonical bundle (extension.toml + wasm + queries + src) into a
-# tarball.
-#
-# Usage:
-#   bin/build                # build wasm (default)
-#   bin/build -- <args>      # pass-through to `tree-sitter build`
-#
-# Source of truth: arthur-debert/release templates/tree-sitter/bin/build.
+# Runs `npx tree-sitter build --wasm` from the repo root to produce
+# the WASM artifact. release-time tree-sitter.yml@v1 runs the same
+# command then assembles the canonical bundle into a tarball.
 
-if ! command -v npx >/dev/null 2>&1; then
-    echo "bin/build: npx not found on \$PATH (tree-sitter CLI is npm-based)" >&2
-    exit 1
-fi
+die() {
+    echo "$1" >&2
+    exit 2
+}
 
-# Strip leading `--` (caller-side convention to delimit pass-through).
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+cd "$REPO_ROOT"
+
+command -v npx >/dev/null 2>&1 || die "bin/build: npx not found on \$PATH (tree-sitter CLI is npm-based)"
+
+# Strip leading `--` (caller-side convention).
 if [ "$#" -gt 0 ] && [ "$1" = "--" ]; then
     shift
 fi
