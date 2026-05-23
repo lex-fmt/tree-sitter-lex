@@ -1,5 +1,8 @@
 node_modules/
-bin/
+# Allow bin/<verb> canonical shims (per arthur-debert/release take-iii).
+/bin/*
+!/bin/check
+!/bin/build
 *.wasm
 package-lock.json
 .padz
