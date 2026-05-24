@@ -3,6 +3,10 @@ node_modules/
 /bin/*
 !/bin/check
 !/bin/build
+!/bin/changelog
+!/bin/changelog-add
+!/bin/changelog-cut
+!/bin/changelog-render
 *.wasm
 package-lock.json
 .padz
