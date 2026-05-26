@@ -101,7 +101,7 @@ fi
 # devDeps pinned by caret range, no app deps to lock). The canonical
 # Node block above only installs when a lockfile
 # is present, so without this fallback `node_modules/` stays empty and
-# every `npx tree-sitter …` invocation in scripts/test-all bails out with
+# every `npx tree-sitter …` invocation in bin/check bails out with
 # "could not determine executable to run". Plain `npm install` is the
 # right tool here.
 if [ -f package.json ] && [ ! -f package-lock.json ] && [ ! -f yarn.lock ] \

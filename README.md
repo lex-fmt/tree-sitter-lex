@@ -54,24 +54,24 @@ The release artifact `tree-sitter.tar.gz` contains everything needed:
 
 ```sh
 npm install                  # install tree-sitter CLI (one time)
-./scripts/test-all           # run ALL checks (same as pre-commit and CI)
-./scripts/test-all --quick   # skip parity (for rapid iteration)
+bin/check                    # run ALL checks (same as pre-commit and CI)
+bin/check --quick            # skip parity (for rapid iteration)
 ```
 
-`scripts/test-all` regenerates the parser, runs the corpus tests, runs the
+`bin/check` regenerates the parser, runs the corpus tests, runs the
 generated bats `no-errors` suite, and runs parity. See `CLAUDE.md` for finer-
 grained invocations (single bats files, filter patterns, etc.).
 
 ### Parity testing
 
 The parity check compares tree-sitter's CST with lex-core's AST to verify
-structural agreement. It requires the `lexd` CLI binary, which `scripts/test-all`
+structural agreement. It requires the `lexd` CLI binary, which `bin/check`
 downloads automatically (pinned version from `shared/lex-deps.json`). To
 pre-fetch it manually, or to use an existing `lexd` binary:
 
 ```sh
 ./app-bin/download-lexd-cli.sh        # download pinned lexd into ./bin/lexd
-LEX_CLI_PATH=/path/to/lexd ./scripts/test-all  # or point at an existing lexd
+LEX_CLI_PATH=/path/to/lexd bin/check  # or point at an existing lexd
 ```
 
 ### Pre-commit hook
@@ -80,10 +80,10 @@ LEX_CLI_PATH=/path/to/lexd ./scripts/test-all  # or point at an existing lexd
 ln -sf ../../app-bin/pre-commit .git/hooks/pre-commit
 ```
 
-The hook execs `scripts/test-all`, so it runs the full check set — generate,
+The hook execs `bin/check`, so it runs the full check set — generate,
 corpus tests, bats no-errors, and parity — exactly the same as CI. The parity
 step downloads `lexd` automatically if it isn't already in `./bin/`; use
-`./scripts/test-all --quick` to skip parity for rapid local iteration.
+`bin/check --quick` to skip parity for rapid local iteration.
 
 ### Architecture: two parsers, different jobs
 
