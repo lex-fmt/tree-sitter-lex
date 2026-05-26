@@ -16,10 +16,12 @@ queries/
 test/corpus/        Tree-sitter corpus tests
 scripts/
   test-all          Single entry point — runs all checks (used by pre-commit and CI)
-  test-tree-shape   Corpus tests (tree structure correctness)
   parity-print.js   Converts tree-sitter XML to parity format
   parity-ignored.txt  Acknowledged parity divergences (bats skip)
   download-lexd-cli.sh Downloads lexd binary
+app-bin/
+  pre-commit        Git pre-commit hook
+  test-tree-shape   Corpus tests (tree structure correctness)
 test/
   corpus/           Tree-sitter corpus tests (test-tree-shape)
   helpers.bash      Shared bats helpers (assert_no_errors, assert_parity)
@@ -36,7 +38,7 @@ shared/
 npm install                  # install tree-sitter CLI (one time)
 ./scripts/test-all                                    # run ALL checks (same as pre-commit and CI)
 ./scripts/test-all --quick                            # skip parity (for rapid iteration)
-./scripts/test-tree-shape                             # just corpus tests
+./app-bin/test-tree-shape                             # just corpus tests
 npx bats test/generated/no-errors.bats                # just error-free parsing (after generate)
 npx bats test/generated/parity.bats                   # just parity (after generate, needs LEX_CLI)
 npx bats --filter "annotation-01" test/generated/     # single file by name
@@ -62,7 +64,7 @@ test-no-errors and test-parity use [bats-core](https://github.com/bats-core/bats
 
 ## Pre-commit hook
 
-Install: `ln -sf ../../scripts/pre-commit .git/hooks/pre-commit`
+Install: `ln -sf ../../app-bin/pre-commit .git/hooks/pre-commit`
 
 ## Releasing
 

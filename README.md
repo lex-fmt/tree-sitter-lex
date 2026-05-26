@@ -77,7 +77,7 @@ LEX_CLI_PATH=/path/to/lexd ./scripts/test-all  # or point at an existing lexd
 ### Pre-commit hook
 
 ```sh
-ln -sf ../../scripts/pre-commit .git/hooks/pre-commit
+ln -sf ../../app-bin/pre-commit .git/hooks/pre-commit
 ```
 
 The hook execs `scripts/test-all`, so it runs the full check set — generate,
