@@ -35,7 +35,7 @@ shared/
 
 ```sh
 npm install                  # install tree-sitter CLI (one time)
-./scripts/test-all                                    # run ALL checks (same as pre-commit and CI)
+./scripts/test-all                                    # run ALL checks (same as CI)
 ./scripts/test-all --quick                            # skip parity (for rapid iteration)
 npx tree-sitter test                                  # just corpus tests
 npx bats test/generated/no-errors.bats                # just error-free parsing (after generate)
@@ -46,8 +46,8 @@ npx bats --filter "fullwidth" test/generated/         # pattern match
 
 ## Testing Philosophy
 
-One entry point (`scripts/test-all`) runs the same checks everywhere — pre-commit,
-CI, manual. No silent skips, no context-dependent behavior. If a dependency is
+One entry point (`scripts/test-all`) runs the same checks everywhere — CI
+and manual. No silent skips, no context-dependent behavior. If a dependency is
 needed, it's fetched automatically.
 
 Three checks, clear semantics:
