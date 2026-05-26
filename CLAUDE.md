@@ -38,7 +38,7 @@ shared/
 npm install                  # install tree-sitter CLI (one time)
 ./scripts/test-all                                    # run ALL checks (same as pre-commit and CI)
 ./scripts/test-all --quick                            # skip parity (for rapid iteration)
-./app-bin/test-tree-shape                             # just corpus tests
+./scripts/test-tree-shape                             # just corpus tests
 npx bats test/generated/no-errors.bats                # just error-free parsing (after generate)
 npx bats test/generated/parity.bats                   # just parity (after generate, needs LEX_CLI)
 npx bats --filter "annotation-01" test/generated/     # single file by name

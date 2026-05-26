@@ -51,7 +51,7 @@ jobs:
 
       - name: Smoke-check the new manifest
         if: steps.bump.outputs.changed == 'true'
-        run: app-bin/smoke-grammars.sh
+        run: scripts/smoke-grammars.sh
 
       - name: Open pull request
         if: steps.bump.outputs.changed == 'true'
@@ -63,7 +63,7 @@ jobs:
           title: "Quarterly grammar bump"
           body: |
             Quarterly bump of `shared/embedded-grammars.json` to the latest
-            non-prerelease upstream tags. `app-bin/smoke-grammars.sh` passed
+            non-prerelease upstream tags. `scripts/smoke-grammars.sh` passed
             in CI against the new pins.
 
             ```

@@ -8,7 +8,7 @@
 #
 # For tree-sitter-lex, we ship `shared/embedded-grammars.json` so
 # downstream editors can drive their grammar-fetch logic from this
-# upstream manifest. We also run app-bin/smoke-grammars.sh as a
+# upstream manifest. We also run scripts/smoke-grammars.sh as a
 # release-gate: a release that ships a manifest pointing at
 # missing WASM / queries / license would silently break the
 # editors at install time, which is the worst possible failure
@@ -24,9 +24,9 @@ set -euo pipefail
 # Failure here aborts the build → no tag-push-vs-build-failure window
 # (corpus-test already ran successfully in a prior job; this is the
 # remaining release-time invariant).
-if [ -f app-bin/smoke-grammars.sh ]; then
+if [ -f scripts/smoke-grammars.sh ]; then
   echo "→ smoke-checking shared/embedded-grammars.json"
-  bash app-bin/smoke-grammars.sh
+  bash scripts/smoke-grammars.sh
 fi
 
 # Ship the manifest itself so editors can read it at install time.
