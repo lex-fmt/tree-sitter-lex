@@ -69,13 +69,15 @@ if ! $QUICK; then
         # from the release repo if not found.
         if ! command -v fetch-deps &>/dev/null; then
             _fetch_deps="$(mktemp)"
-            curl -fsSL -o "$_fetch_deps" \
-                "https://raw.githubusercontent.com/arthur-debert/release/main/bin/fetch-deps"
-            chmod +x "$_fetch_deps"
+            if curl -fsSL -o "$_fetch_deps" \
+                "https://raw.githubusercontent.com/arthur-debert/release/main/bin/fetch-deps"; then
+                chmod +x "$_fetch_deps"
+                "$_fetch_deps" --if-missing lexd-cli || :
+            fi
+            rm -f "$_fetch_deps"
         else
-            _fetch_deps="fetch-deps"
+            fetch-deps --if-missing lexd-cli || :
         fi
-        "$_fetch_deps" --if-missing lexd-cli || :
         if [[ -x "$REPO_DIR/bin/lexd" ]]; then
             LEX_CLI="$REPO_DIR/bin/lexd"
         fi
