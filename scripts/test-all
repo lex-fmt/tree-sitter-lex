@@ -62,16 +62,23 @@ fi
 if ! $QUICK; then
     # Ensure lexd is available
     export LEX_CLI="${LEX_CLI_PATH:-}"
-    if [[ -z "$LEX_CLI" ]] && [[ -f "$REPO_DIR/bin/lexd" ]]; then
-        LEX_CLI="$REPO_DIR/bin/lexd"
-    fi
     if [[ -z "$LEX_CLI" ]]; then
         echo ""
-        echo "Downloading lexd..."
-        # Don't redirect stderr: download failures (curl 404, missing jq, etc.)
-        # should be visible. The `|| :` keeps `set -e` from killing the script
-        # so the empty-LEX_CLI check below can report the failure properly.
-        LEX_CLI=$("$REPO_DIR/app-bin/download-lexd-cli.sh" | tail -1) || :
+        echo "Fetching lexd via fetch-deps..."
+        # fetch-deps is on PATH locally (via dodot). In CI, bootstrap it
+        # from the release repo if not found.
+        if ! command -v fetch-deps &>/dev/null; then
+            _fetch_deps="$(mktemp)"
+            curl -fsSL -o "$_fetch_deps" \
+                "https://raw.githubusercontent.com/arthur-debert/release/main/bin/fetch-deps"
+            chmod +x "$_fetch_deps"
+        else
+            _fetch_deps="fetch-deps"
+        fi
+        "$_fetch_deps" --if-missing lexd-cli || :
+        if [[ -x "$REPO_DIR/bin/lexd" ]]; then
+            LEX_CLI="$REPO_DIR/bin/lexd"
+        fi
     fi
     if [[ -z "$LEX_CLI" ]] || [[ ! -x "$LEX_CLI" ]]; then
         echo "Error: could not obtain lexd binary." >&2
