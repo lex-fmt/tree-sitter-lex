@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # check: single entry point for all tree-sitter-lex quality checks.
 #
 # Runs the same checks in every context: pre-commit hook, CI, manual.
@@ -18,6 +18,8 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
+die() { echo "$1" >&2; exit 2; }
+
 QUICK=false
 for arg in "$@"; do
     case "$arg" in
@@ -26,11 +28,12 @@ for arg in "$@"; do
 done
 
 cd "$REPO_DIR"
+command -v npx >/dev/null 2>&1 || die "bin/check: npx not found on \$PATH (tree-sitter CLI is npm-based)"
 FAILED=false
 
 # --- 1. Generate parser ---
 echo "Generating parser..."
-npx tree-sitter generate >/dev/null 2>&1
+npx tree-sitter generate >/dev/null
 
 # --- 2. Tree shape (corpus tests) ---
 echo ""
@@ -83,8 +86,7 @@ if ! $QUICK; then
         fi
     fi
     if [[ -z "$LEX_CLI" ]] || [[ ! -x "$LEX_CLI" ]]; then
-        echo "Error: could not obtain lexd binary." >&2
-        FAILED=true
+        die "Error: could not obtain lexd binary."
     else
         export LEX_CLI
         echo ""
