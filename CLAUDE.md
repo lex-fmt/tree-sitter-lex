@@ -15,15 +15,14 @@ queries/
   textobjects.scm   nvim-treesitter structural selection
 test/corpus/        Tree-sitter corpus tests
 scripts/
-  test-all          Single entry point — runs all checks (used by pre-commit and CI)
+  test-all          Single entry point — runs all checks (used by CI)
+app-bin/
   parity-print.js   Converts tree-sitter XML to parity format
   parity-ignored.txt  Acknowledged parity divergences (bats skip)
   download-lexd-cli.sh Downloads lexd binary
-app-bin/
-  pre-commit        Git pre-commit hook
-  test-tree-shape   Corpus tests (tree structure correctness)
+  bump-grammars.sh  Quarterly grammar dependency bump
 test/
-  corpus/           Tree-sitter corpus tests (test-tree-shape)
+  corpus/           Tree-sitter corpus tests
   helpers.bash      Shared bats helpers (assert_no_errors, assert_parity)
   generate-tests.sh Generates bats tests from spec fixtures
   generated/        Auto-generated .bats files (gitignored)
@@ -38,7 +37,7 @@ shared/
 npm install                  # install tree-sitter CLI (one time)
 ./scripts/test-all                                    # run ALL checks (same as pre-commit and CI)
 ./scripts/test-all --quick                            # skip parity (for rapid iteration)
-./scripts/test-tree-shape                             # just corpus tests
+npx tree-sitter test                                  # just corpus tests
 npx bats test/generated/no-errors.bats                # just error-free parsing (after generate)
 npx bats test/generated/parity.bats                   # just parity (after generate, needs LEX_CLI)
 npx bats --filter "annotation-01" test/generated/     # single file by name
@@ -52,7 +51,7 @@ CI, manual. No silent skips, no context-dependent behavior. If a dependency is
 needed, it's fetched automatically.
 
 Three checks, clear semantics:
-- **test-tree-shape**: does the grammar produce expected tree structures? (corpus tests)
+- **tree-shape** (inline in test-all): does the grammar produce expected tree structures? (corpus tests via `npx tree-sitter test`)
 - **test-no-errors**: can tree-sitter parse all spec documents without ERROR nodes? (bats)
 - **test-parity**: does tree-sitter's CST match lex-core's AST? (bats)
 
@@ -61,10 +60,6 @@ acknowledged failures — bats reports them as "skipped", not "passing."
 
 test-no-errors and test-parity use [bats-core](https://github.com/bats-core/bats-core)
 — each spec fixture is an individual test case with TAP output.
-
-## Pre-commit hook
-
-Install: `ln -sf ../../app-bin/pre-commit .git/hooks/pre-commit`
 
 ## Releasing
 
