@@ -15,10 +15,10 @@ jobs:
   ci:
     uses: arthur-debert/release/.github/workflows/tree-sitter-ci.yml@v1
     with:
-      # This repo's umbrella entry point is scripts/test-all (matches
-      # the pre-commit gate). The smoke-grammars sanity step
-      # historically ran AFTER the umbrella in the bespoke workflow;
-      # preserve that ordering with `&&`.
-      check-command: 'scripts/test-all && scripts/smoke-grammars.sh'
+      # This repo's umbrella entry point is bin/check (matches the
+      # pre-commit gate). The smoke-grammars sanity step historically
+      # ran AFTER the umbrella in the bespoke workflow; preserve that
+      # ordering with `&&`.
+      check-command: 'bin/check && app-bin/smoke-grammars.sh'
       # Submodules carry vendored dependencies the grammar generates against.
       submodules: true

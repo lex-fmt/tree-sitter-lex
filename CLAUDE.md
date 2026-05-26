@@ -14,8 +14,8 @@ queries/
   injections.scm    Embedded language injection (verbatim blocks)
   textobjects.scm   nvim-treesitter structural selection
 test/corpus/        Tree-sitter corpus tests
-scripts/
-  test-all          Single entry point — runs all checks (used by CI)
+bin/
+  check             Single entry point — runs all checks (used by CI)
 app-bin/
   parity-print.js   Converts tree-sitter XML to parity format
   parity-ignored.txt  Acknowledged parity divergences (bats skip)
@@ -35,8 +35,8 @@ shared/
 
 ```sh
 npm install                  # install tree-sitter CLI (one time)
-./scripts/test-all                                    # run ALL checks (same as CI)
-./scripts/test-all --quick                            # skip parity (for rapid iteration)
+bin/check                                             # run ALL checks (same as CI)
+bin/check --quick                                     # skip parity (for rapid iteration)
 npx tree-sitter test                                  # just corpus tests
 npx bats test/generated/no-errors.bats                # just error-free parsing (after generate)
 npx bats test/generated/parity.bats                   # just parity (after generate, needs LEX_CLI)
@@ -46,12 +46,12 @@ npx bats --filter "fullwidth" test/generated/         # pattern match
 
 ## Testing Philosophy
 
-One entry point (`scripts/test-all`) runs the same checks everywhere — CI
+One entry point (`bin/check`) runs the same checks everywhere — CI
 and manual. No silent skips, no context-dependent behavior. If a dependency is
 needed, it's fetched automatically.
 
 Three checks, clear semantics:
-- **tree-shape** (inline in test-all): does the grammar produce expected tree structures? (corpus tests via `npx tree-sitter test`)
+- **tree-shape** (inline in bin/check): does the grammar produce expected tree structures? (corpus tests via `npx tree-sitter test`)
 - **test-no-errors**: can tree-sitter parse all spec documents without ERROR nodes? (bats)
 - **test-parity**: does tree-sitter's CST match lex-core's AST? (bats)
 

@@ -1,26 +1,113 @@
 #!/usr/bin/env bash
+# check: single entry point for all tree-sitter-lex quality checks.
+#
+# Runs the same checks in every context: pre-commit hook, CI, manual.
+#
+# Usage:
+#   bin/check                # run all checks
+#   bin/check --quick        # skip parity
+#
+# Run subsets directly via bats:
+#   npx bats test/generated/no-errors.bats              # just error checks
+#   npx bats test/generated/parity.bats                 # just parity
+#   npx bats --filter "annotation-01" test/generated/   # single file
+#   npx bats --filter "fullwidth" test/generated/       # pattern match
+
 set -euo pipefail
 
-# Canonical tree-sitter check entry point. Same script local + CI.
-#
-# Delegates to scripts/test-all if present. The lex-fmt/tree-sitter-lex
-# repo has scripts/test-all wired as the umbrella; consumers without it
-# can fall back to the standard tree-sitter test cycle.
-
-die() {
-    echo "$1" >&2
-    exit 2
-}
-
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-cd "$REPO_ROOT"
+REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-if [ -x scripts/test-all ]; then
-    exec scripts/test-all "$@"
+die() { echo "$1" >&2; exit 2; }
+
+QUICK=false
+for arg in "$@"; do
+    case "$arg" in
+        --quick) QUICK=true ;;
+    esac
+done
+
+cd "$REPO_DIR"
+command -v npx >/dev/null 2>&1 || die "bin/check: npx not found on \$PATH (tree-sitter CLI is npm-based)"
+FAILED=false
+
+# --- 1. Generate parser ---
+echo "Generating parser..."
+npx tree-sitter generate >/dev/null
+
+# --- 2. Tree shape (corpus tests) ---
+echo ""
+echo "═══ test-tree-shape ═══"
+echo ""
+if npx tree-sitter test; then
+    true
+else
+    FAILED=true
 fi
 
-command -v npx >/dev/null 2>&1 || die "bin/check: npx not found on \$PATH (tree-sitter CLI is npm-based)"
+# --- 3. Generate bats tests from spec fixtures ---
+echo ""
+echo "═══ Generating bats tests ═══"
+echo ""
+bash test/generate-tests.sh
 
-npx tree-sitter generate
-exec npx tree-sitter test "$@"
+# --- 4. No-errors (bats) ---
+echo ""
+echo "═══ test-no-errors ═══"
+echo ""
+if npx bats test/generated/no-errors.bats; then
+    true
+else
+    FAILED=true
+fi
+
+# --- 5. Parity (bats) ---
+if ! $QUICK; then
+    # Ensure lexd is available
+    export LEX_CLI="${LEX_CLI_PATH:-}"
+    if [[ -z "$LEX_CLI" ]]; then
+        echo ""
+        echo "Fetching lexd via fetch-deps..."
+        # fetch-deps is on PATH locally (via dodot). In CI, bootstrap it
+        # from the release repo if not found.
+        if ! command -v fetch-deps &>/dev/null; then
+            _fetch_deps="$(mktemp)"
+            if curl -fsSL -o "$_fetch_deps" \
+                "https://raw.githubusercontent.com/arthur-debert/release/main/bin/fetch-deps"; then
+                chmod +x "$_fetch_deps"
+                "$_fetch_deps" --if-missing lexd-cli || :
+            fi
+            rm -f "$_fetch_deps"
+        else
+            fetch-deps --if-missing lexd-cli || :
+        fi
+        if [[ -x "$REPO_DIR/bin/lexd" ]]; then
+            LEX_CLI="$REPO_DIR/bin/lexd"
+        fi
+    fi
+    if [[ -z "$LEX_CLI" ]] || [[ ! -x "$LEX_CLI" ]]; then
+        die "Error: could not obtain lexd binary."
+    else
+        export LEX_CLI
+        echo ""
+        echo "═══ test-parity (lexd: $($LEX_CLI --version 2>&1)) ═══"
+        echo ""
+        if npx bats test/generated/parity.bats; then
+            true
+        else
+            FAILED=true
+        fi
+    fi
+else
+    echo ""
+    echo "═══ test-parity (skipped: --quick) ═══"
+fi
+
+# --- Summary ---
+echo ""
+if $FAILED; then
+    echo "RESULT: FAIL"
+    exit 1
+else
+    echo "RESULT: PASS"
+fi
