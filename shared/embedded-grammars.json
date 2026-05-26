@@ -1,5 +1,5 @@
 {
-  "description": "Curated tree-sitter grammars editors should bundle to render `:: lang ::` injection inside Lex verbatim blocks. Lex isn't a gatekeeper of formats — this is a packaging convenience, not a contract about which languages 'belong'. Editors are free to bundle more, fewer, or different grammars; injection still works for any language the host can resolve. Bumping a version is an explicit decision: edit this file, run scripts/smoke-grammars.sh, and cut a tree-sitter-lex release. Editors then pick up the new manifest by bumping their tree-sitter pin.",
+  "description": "Curated tree-sitter grammars editors should bundle to render `:: lang ::` injection inside Lex verbatim blocks. Lex isn't a gatekeeper of formats — this is a packaging convenience, not a contract about which languages 'belong'. Editors are free to bundle more, fewer, or different grammars; injection still works for any language the host can resolve. Bumping a version is an explicit decision: edit this file, run app-bin/smoke-grammars.sh, and cut a tree-sitter-lex release. Editors then pick up the new manifest by bumping their tree-sitter pin.",
   "schema_version": 1,
   "grammars": [
     {

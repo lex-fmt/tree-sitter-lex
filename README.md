@@ -70,14 +70,14 @@ downloads automatically (pinned version from `shared/lex-deps.json`). To
 pre-fetch it manually, or to use an existing `lexd` binary:
 
 ```sh
-./scripts/download-lexd-cli.sh        # download pinned lexd into ./bin/lexd
+./app-bin/download-lexd-cli.sh        # download pinned lexd into ./bin/lexd
 LEX_CLI_PATH=/path/to/lexd ./scripts/test-all  # or point at an existing lexd
 ```
 
 ### Pre-commit hook
 
 ```sh
-ln -sf ../../scripts/pre-commit .git/hooks/pre-commit
+ln -sf ../../app-bin/pre-commit .git/hooks/pre-commit
 ```
 
 The hook execs `scripts/test-all`, so it runs the full check set — generate,

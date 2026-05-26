@@ -71,7 +71,7 @@ if ! $QUICK; then
         # Don't redirect stderr: download failures (curl 404, missing jq, etc.)
         # should be visible. The `|| :` keeps `set -e` from killing the script
         # so the empty-LEX_CLI check below can report the failure properly.
-        LEX_CLI=$("$SCRIPT_DIR/download-lexd-cli.sh" | tail -1) || :
+        LEX_CLI=$("$REPO_DIR/app-bin/download-lexd-cli.sh" | tail -1) || :
     fi
     if [[ -z "$LEX_CLI" ]] || [[ ! -x "$LEX_CLI" ]]; then
         echo "Error: could not obtain lexd binary." >&2

@@ -13,7 +13,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 OUT_DIR="$SCRIPT_DIR/generated"
-IGNORE_LIST="$REPO_DIR/scripts/parity-ignored.txt"
+IGNORE_LIST="$REPO_DIR/app-bin/parity-ignored.txt"
 
 mkdir -p "$OUT_DIR"
 

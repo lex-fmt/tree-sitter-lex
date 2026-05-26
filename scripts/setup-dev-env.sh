@@ -74,13 +74,16 @@ fi
 
 # --- 3. Pre-commit hook wiring -------------------------------------------
 # Default: lefthook (binary installed at env-setup time). Fallback for
-# repos that ship a hand-rolled scripts/pre-commit instead (zed-lex,
-# tree-sitter-lex pattern): symlink it into .git/hooks/.
+# repos that ship a hand-rolled app-bin/pre-commit (or legacy
+# scripts/pre-commit): symlink it into .git/hooks/.
 
 if [ -f lefthook.yml ] && command -v lefthook >/dev/null 2>&1; then
   if ! lefthook install >/dev/null; then
     echo "warning: lefthook install failed — pre-commit hook NOT wired" >&2
   fi
+elif [ -x app-bin/pre-commit ]; then
+  mkdir -p .git/hooks
+  ln -sf ../../app-bin/pre-commit .git/hooks/pre-commit
 elif [ -x scripts/pre-commit ]; then
   mkdir -p .git/hooks
   ln -sf ../../scripts/pre-commit .git/hooks/pre-commit

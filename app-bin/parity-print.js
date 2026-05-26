@@ -13,7 +13,7 @@
  * directly from the CST node positions (paragraph scol inside verbatim_block).
  *
  * Usage:
- *   npx tree-sitter parse -x file.lex | node scripts/parity-print.js
+ *   npx tree-sitter parse -x file.lex | node app-bin/parity-print.js
  */
 
 // --- Minimal XML parser (tree-sitter XML is simple and well-formed) ---
