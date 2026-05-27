@@ -54,7 +54,7 @@ The release artifact `tree-sitter.tar.gz` contains everything needed:
 
 ```sh
 npm install                  # install tree-sitter CLI (one time)
-bin/check                    # run ALL checks (same as pre-commit and CI)
+bin/check                    # umbrella check script (CI adds smoke-grammars on top)
 bin/check --quick            # skip parity (for rapid iteration)
 ```
 
@@ -73,17 +73,6 @@ pre-fetch it manually, or to use an existing `lexd` binary:
 ./app-bin/download-lexd-cli.sh        # download pinned lexd into ./bin/lexd
 LEX_CLI_PATH=/path/to/lexd bin/check  # or point at an existing lexd
 ```
-
-### Pre-commit hook
-
-```sh
-ln -sf ../../app-bin/pre-commit .git/hooks/pre-commit
-```
-
-The hook execs `bin/check`, so it runs the full check set — generate,
-corpus tests, bats no-errors, and parity — exactly the same as CI. The parity
-step downloads `lexd` automatically if it isn't already in `./bin/`; use
-`bin/check --quick` to skip parity for rapid local iteration.
 
 ### Architecture: two parsers, different jobs
 

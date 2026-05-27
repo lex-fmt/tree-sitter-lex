@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # check: single entry point for all tree-sitter-lex quality checks.
 #
-# Runs the same checks in every context: pre-commit hook, CI, manual.
+# Runs the same checks in every context: CI and manual.
 #
 # Usage:
 #   bin/check                # run all checks

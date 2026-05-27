@@ -1,4 +1,0 @@
-#!/usr/bin/env bash
-# pre-commit hook — execs bin/check so the same checks run locally and in CI.
-# Install: ln -sf ../../app-bin/pre-commit .git/hooks/pre-commit
-exec "$(dirname "$0")/../bin/check" "$@"
