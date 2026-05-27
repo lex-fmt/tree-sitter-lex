@@ -54,7 +54,7 @@ The release artifact `tree-sitter.tar.gz` contains everything needed:
 
 ```sh
 npm install                  # install tree-sitter CLI (one time)
-bin/check                    # run ALL checks (same as CI)
+bin/check                    # umbrella check script (CI adds smoke-grammars on top)
 bin/check --quick            # skip parity (for rapid iteration)
 ```
 
