@@ -1,3 +1,7 @@
+<!-- BEGIN release-managed orientation — managed by release-sync; do not edit -->
+@.release/ORIENTATION.md
+<!-- END release-managed orientation -->
+
 # tree-sitter-lex
 
 Tree-sitter grammar for the Lex document format — syntax highlighting,
