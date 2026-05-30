@@ -39,7 +39,7 @@ is_ignored() {
     echo 'load "../helpers"'
     echo ''
     while IFS= read -r f; do
-        rel="${f#$REPO_DIR/}"
+        rel="${f#"$REPO_DIR"/}"
         name=$(echo "$rel" | sed 's|comms/specs/||; s|\.lex$||')
         echo "@test \"no-errors: $name\" {"
         echo "    assert_no_errors \"$rel\""
@@ -55,7 +55,7 @@ is_ignored() {
     echo 'load "../helpers"'
     echo ''
     for f in "$REPO_DIR"/comms/specs/elements/**/*.lex; do
-        rel="${f#$REPO_DIR/}"
+        rel="${f#"$REPO_DIR"/}"
         name=$(echo "$rel" | sed 's|comms/specs/elements/||; s|\.lex$||')
         if is_ignored "$rel"; then
             echo "# bats test_tags=ignored"
