@@ -76,7 +76,7 @@ LEX_CLI_PATH=/path/to/lexd bin/check  # or point at an existing lexd
 
 ### Architecture: two parsers, different jobs
 
-```
+```text
 Tree-sitter (sync, in editor)       lex-core via lex-lsp (async)
 - Syntax highlighting               - Semantic tokens (overrides TS)
 - Embedded language injection        - Diagnostics
