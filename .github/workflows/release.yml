@@ -23,7 +23,7 @@ permissions:
 
 jobs:
   release:
-    uses: arthur-debert/release/.github/workflows/tree-sitter.yml@v1
+    uses: arthur-debert/release/.github/workflows/tree-sitter.yml@v2
     with:
       version: ${{ inputs.version }}
       # parser-name derives automatically from package.json's "name"
