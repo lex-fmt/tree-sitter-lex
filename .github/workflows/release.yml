@@ -1,6 +1,6 @@
 name: Release
 
-# Thin caller of arthur-debert/release/.github/workflows/tree-sitter.yml@v1.
+# Thin caller of arthur-debert/release/.github/workflows/tree-sitter.yml@v3.
 # All the matrix + build + bundle + publish logic lives there. This file
 # carries the bindings (version input, secrets) and the per-consumer
 # follow-up: notifying downstream editors after a successful release.
@@ -23,7 +23,7 @@ permissions:
 
 jobs:
   release:
-    uses: arthur-debert/release/.github/workflows/tree-sitter.yml@v2
+    uses: arthur-debert/release/.github/workflows/tree-sitter.yml@v3
     with:
       version: ${{ inputs.version }}
       # parser-name derives automatically from package.json's "name"

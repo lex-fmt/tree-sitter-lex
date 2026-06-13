@@ -28,6 +28,6 @@ on:
 
 jobs:
   cascade:
-    uses: arthur-debert/release/.github/workflows/cascade-handler.yml@v2
+    uses: arthur-debert/release/.github/workflows/cascade-handler.yml@v3
     secrets:
       RELEASE_TOKEN: ${{ secrets.RELEASE_TOKEN }}
