@@ -1,5 +1,5 @@
 node_modules/
-# Allow bin/<verb> canonical shims (per arthur-debert/release take-iii).
+# Allow bin/<verb> thin callers (per arthur-debert/release).
 /bin/*
 !/bin/check
 !/bin/build
