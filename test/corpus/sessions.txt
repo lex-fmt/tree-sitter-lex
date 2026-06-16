@@ -56,3 +56,97 @@ Session Name
       (text_line
         (line_content
           (text_content))))))
+
+==================
+Nested session inside session
+==================
+Outer Session
+
+    Intro paragraph
+
+    Inner Session
+
+        Inner content here
+---
+
+(document
+  (session
+    title: (line_content
+      (text_content))
+    (paragraph
+      (text_line
+        (line_content
+          (text_content))))
+    (blank_line)
+    (session
+      title: (line_content
+        (text_content))
+      (paragraph
+        (text_line
+          (line_content
+            (text_content)))))))
+
+==================
+Two top-level sessions back to back
+==================
+First Session
+
+    First content
+
+Second Session
+
+    Second content
+---
+
+(document
+  (session
+    title: (line_content
+      (text_content))
+    (paragraph
+      (text_line
+        (line_content
+          (text_content))))
+    (blank_line))
+  (session
+    title: (line_content
+      (text_content))
+    (paragraph
+      (text_line
+        (line_content
+          (text_content))))))
+
+==================
+Session title with inline formatting
+==================
+A *bold* and `code` Title
+
+    Body content here
+---
+
+(document
+  (session
+    title: (line_content
+      (text_content
+        (strong)
+        (code_span)))
+    (paragraph
+      (text_line
+        (line_content
+          (text_content))))))
+
+==================
+Session with subject-style title
+==================
+My Session:
+
+    Body content
+---
+
+(document
+  (session
+    title: (line_content
+      (subject_content))
+    (paragraph
+      (text_line
+        (line_content
+          (text_content))))))
