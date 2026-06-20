@@ -37,7 +37,7 @@ jobs:
       run-corpus-tests: true
       # Layer 2 of the cross-repo release cascade (lex-fmt/lex#640). The
       # reusable tree-sitter.yml fires `upstream-released` to each repo here
-      # after a successful release (release@v3+). The editor extensions pin
+      # after a successful release (release@v3.8.0+). The editor extensions pin
       # tree-sitter via shared/lex-deps.json and listen for the two-hop
       # cascade from both lex and tree-sitter-lex. See arthur-debert/release#804.
       notify-downstreams: lex-fmt/vscode lex-fmt/nvim lex-fmt/lexed
