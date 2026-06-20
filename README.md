@@ -70,7 +70,7 @@ downloads automatically (pinned version from `shared/lex-deps.json`). To
 pre-fetch it manually, or to use an existing `lexd` binary:
 
 ```sh
-./app-bin/download-lexd-cli.sh        # download pinned lexd into ./bin/lexd
+fetch-deps --if-missing lexd-cli      # download pinned lexd into ./deps/lexd
 LEX_CLI_PATH=/path/to/lexd bin/check  # or point at an existing lexd
 ```
 

@@ -81,8 +81,8 @@ if ! $QUICK; then
         else
             fetch-deps --if-missing lexd-cli || :
         fi
-        if [[ -x "$REPO_DIR/bin/lexd" ]]; then
-            LEX_CLI="$REPO_DIR/bin/lexd"
+        if [[ -x "$REPO_DIR/deps/lexd" ]]; then
+            LEX_CLI="$REPO_DIR/deps/lexd"
         fi
     fi
     if [[ -z "$LEX_CLI" ]] || [[ ! -x "$LEX_CLI" ]]; then

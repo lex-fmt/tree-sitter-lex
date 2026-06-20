@@ -21,8 +21,8 @@ bin/
 app-bin/
   parity-print.js   Converts tree-sitter XML to parity format
   parity-ignored.txt  Acknowledged parity divergences (bats skip)
-  download-lexd-cli.sh Downloads lexd binary
   bump-grammars.sh  Quarterly grammar dependency bump
+deps/               Downloaded runtime/test deps (lexd binary; gitignored)
 test/
   corpus/           Tree-sitter corpus tests
   helpers.bash      Shared bats helpers (assert_no_errors, assert_parity)

@@ -4,6 +4,6 @@
     "version": "v0.14.1",
     "asset": "lexd-{{target}}{{ext}}",
     "binary": "lexd",
-    "dest": "bin"
+    "dest": "deps"
   }
 }
