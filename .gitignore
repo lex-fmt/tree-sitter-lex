@@ -1,4 +1,6 @@
 node_modules/
+# Downloaded runtime/test deps (lexd binary) live here, not in bin/.
+/deps/
 # Allow bin/<verb> thin callers (per arthur-debert/release).
 /bin/*
 !/bin/check

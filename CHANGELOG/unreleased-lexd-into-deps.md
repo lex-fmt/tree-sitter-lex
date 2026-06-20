@@ -1,0 +1,1 @@
+- Download lexd binary into deps/ instead of bin/
