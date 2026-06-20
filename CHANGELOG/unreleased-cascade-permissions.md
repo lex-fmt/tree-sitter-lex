@@ -1,0 +1,1 @@
+- Fix on-upstream-released cascade startup_failure by granting the handler contents/pull-requests write (release#805)
