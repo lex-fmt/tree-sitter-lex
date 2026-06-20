@@ -35,33 +35,11 @@ jobs:
       # consume via shared/lex-deps.json + fetch-artifact (Wave 3).
       publish-npm: false
       run-corpus-tests: true
+      # Layer 2 of the cross-repo release cascade (lex-fmt/lex#640). The
+      # reusable tree-sitter.yml fires `upstream-released` to each repo here
+      # after a successful release (release@v3.8.0+). The editor extensions pin
+      # tree-sitter via shared/lex-deps.json and listen for the two-hop
+      # cascade from both lex and tree-sitter-lex. See arthur-debert/release#804.
+      notify-downstreams: lex-fmt/vscode lex-fmt/nvim lex-fmt/lexed
     secrets:
       RELEASE_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-
-  # Layer 2 of the cross-repo release cascade (lex-fmt/lex#640). After
-  # the reusable workflow finishes, notify the editor repos that pin
-  # tree-sitter via shared/lex-deps.json. This logic is consumer-
-  # specific (the list of downstreams lives here, not in the reusable
-  # workflow), so it stays in the thin caller. The cascade-handler
-  # design intentionally keeps fan-out lists co-located with their
-  # upstream.
-  notify-downstreams:
-    needs: release
-    if: success()
-    runs-on: ubuntu-latest
-    steps:
-      - name: Notify downstream editors
-        env:
-          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-          VERSION: v${{ inputs.version }}
-        run: |
-          set -euo pipefail
-          for repo in lex-fmt/vscode lex-fmt/nvim lex-fmt/lexed; do
-            echo "Notifying ${repo} of tree-sitter-lex@${VERSION}"
-            gh api "repos/${repo}/dispatches" --method POST \
-              -f event_type=upstream-released \
-              -F "client_payload[source]=tree-sitter-lex" \
-              -F "client_payload[version]=${VERSION}" \
-              -F "client_payload[ts]=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-              -F "client_payload[run_url]=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
-          done
