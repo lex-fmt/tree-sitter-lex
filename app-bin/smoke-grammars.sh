@@ -21,29 +21,29 @@ REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 MANIFEST="$REPO_DIR/shared/embedded-grammars.json"
 
 if [[ ! -f "$MANIFEST" ]]; then
-  echo "error: $MANIFEST not found" >&2
-  exit 1
+	echo "error: $MANIFEST not found" >&2
+	exit 1
 fi
 
 if ! command -v jq >/dev/null 2>&1; then
-  echo "error: jq is required (apt-get install jq / brew install jq)" >&2
-  exit 1
+	echo "error: jq is required (apt-get install jq / brew install jq)" >&2
+	exit 1
 fi
 
 curl_opts=(-s -o /dev/null -w "%{http_code}" -L --max-time 20)
 if [[ -n "${GITHUB_TOKEN:-}" ]]; then
-  curl_opts+=(-H "Authorization: Bearer $GITHUB_TOKEN")
+	curl_opts+=(-H "Authorization: Bearer $GITHUB_TOKEN")
 fi
 
 check_url() {
-  local url="$1"
-  local code
-  code=$(curl "${curl_opts[@]}" "$url" || echo "000")
-  if [[ "$code" == "200" ]]; then
-    return 0
-  fi
-  printf '    [%s] %s\n' "$code" "$url" >&2
-  return 1
+	local url="$1"
+	local code
+	code=$(curl "${curl_opts[@]}" "$url" || echo "000")
+	if [[ "$code" == "200" ]]; then
+		return 0
+	fi
+	printf '    [%s] %s\n' "$code" "$url" >&2
+	return 1
 }
 
 count=$(jq '.grammars | length' "$MANIFEST")
@@ -53,34 +53,34 @@ echo "Smoke-checking $count grammar(s) from $MANIFEST"
 echo
 
 for i in $(seq 0 $((count - 1))); do
-  name=$(jq -r ".grammars[$i].name" "$MANIFEST")
-  version=$(jq -r ".grammars[$i].version" "$MANIFEST")
-  repo=$(jq -r ".grammars[$i].repo" "$MANIFEST")
-  wasm_asset=$(jq -r ".grammars[$i].wasm_asset" "$MANIFEST")
-  queries_path=$(jq -r ".grammars[$i].queries_path" "$MANIFEST")
+	name=$(jq -r ".grammars[$i].name" "$MANIFEST")
+	version=$(jq -r ".grammars[$i].version" "$MANIFEST")
+	repo=$(jq -r ".grammars[$i].repo" "$MANIFEST")
+	wasm_asset=$(jq -r ".grammars[$i].wasm_asset" "$MANIFEST")
+	queries_path=$(jq -r ".grammars[$i].queries_path" "$MANIFEST")
 
-  wasm_url="https://github.com/$repo/releases/download/$version/$wasm_asset"
-  queries_url="https://raw.githubusercontent.com/$repo/$version/$queries_path"
-  license_url="https://raw.githubusercontent.com/$repo/$version/LICENSE"
+	wasm_url="https://github.com/$repo/releases/download/$version/$wasm_asset"
+	queries_url="https://raw.githubusercontent.com/$repo/$version/$queries_path"
+	license_url="https://raw.githubusercontent.com/$repo/$version/LICENSE"
 
-  printf '  %-12s %-10s ' "$name" "$version"
+	printf '  %-12s %-10s ' "$name" "$version"
 
-  ok=true
-  check_url "$wasm_url"     || ok=false
-  check_url "$queries_url"  || ok=false
-  check_url "$license_url"  || ok=false
+	ok=true
+	check_url "$wasm_url" || ok=false
+	check_url "$queries_url" || ok=false
+	check_url "$license_url" || ok=false
 
-  if $ok; then
-    echo "OK"
-  else
-    echo "FAIL"
-    failed=$((failed + 1))
-  fi
+	if $ok; then
+		echo "OK"
+	else
+		echo "FAIL"
+		failed=$((failed + 1))
+	fi
 done
 
 echo
 if [[ $failed -gt 0 ]]; then
-  echo "smoke-grammars: $failed of $count grammar(s) failed" >&2
-  exit 1
+	echo "smoke-grammars: $failed of $count grammar(s) failed" >&2
+	exit 1
 fi
 echo "smoke-grammars: all $count grammar(s) reachable"

@@ -8,7 +8,7 @@ navigation (textobjects) for editors that support tree-sitter.
 ## What this provides
 
 | Feature | Query file |
-|---------|-----------|
+| --------- | ----------- |
 | Syntax highlighting | `queries/highlights.scm` |
 | Embedded language injection | `queries/injections.scm` |
 | Structural selection (nvim) | `queries/textobjects.scm` |
@@ -97,7 +97,7 @@ version pinned in their `shared/lex-deps.json`.
 ## Related repos
 
 | Repo | Purpose |
-|------|---------|
+| ------ | --------- |
 | [lex-fmt/lex](https://github.com/lex-fmt/lex) | Rust workspace: parser, LSP, CLI, format conversion |
 | [lex-fmt/comms](https://github.com/lex-fmt/comms) | Grammar specs, docs, assets (submoduled here) |
 | [lex-fmt/vscode](https://github.com/lex-fmt/vscode) | VS Code extension |

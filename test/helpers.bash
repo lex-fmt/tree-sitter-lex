@@ -6,45 +6,45 @@ REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # Parse a .lex file and fail if any ERROR node is found.
 assert_no_errors() {
-    local file="$1"
-    local parse_output=""
-    parse_output="$(npx tree-sitter parse "$REPO_DIR/$file" 2>&1 || :)"
-    if echo "$parse_output" | grep "ERROR" >/dev/null 2>&1; then
-        local count
-        count="$(echo "$parse_output" | grep -c "ERROR" || :)"
-        echo "Found $count ERROR node(s) in $file" >&2
-        echo "$parse_output" | grep -B1 "ERROR" | head -20 >&2
-        return 1
-    fi
+	local file="$1"
+	local parse_output=""
+	parse_output="$(npx tree-sitter parse "$REPO_DIR/$file" 2>&1 || :)"
+	if echo "$parse_output" | grep "ERROR" >/dev/null 2>&1; then
+		local count
+		count="$(echo "$parse_output" | grep -c "ERROR" || :)"
+		echo "Found $count ERROR node(s) in $file" >&2
+		echo "$parse_output" | grep -B1 "ERROR" | head -20 >&2
+		return 1
+	fi
 }
 
 # Compare tree-sitter parity output with lex-core.
 # Requires LEX_CLI to be set (test-all handles this; the variable points at the
 # lexd binary).
 assert_parity() {
-    local file="$1"
-    local lex_output="" ts_output=""
+	local file="$1"
+	local lex_output="" ts_output=""
 
-    # --no-includes keeps lexd from trying to resolve `:: lex.include ::`
-    # annotations during parity inspection. Tree-sitter is a syntactic parser
-    # and doesn't resolve includes, so we want the unresolved view from lexd
-    # too. Without this flag, include fixtures with non-existent targets abort.
-    lex_output="$("$LEX_CLI" inspect "$REPO_DIR/$file" parity --no-includes 2>/dev/null || :)"
-    if [[ -z "$lex_output" ]]; then
-        echo "lexd produced no output for $file" >&2
-        return 1
-    fi
+	# --no-includes keeps lexd from trying to resolve `:: lex.include ::`
+	# annotations during parity inspection. Tree-sitter is a syntactic parser
+	# and doesn't resolve includes, so we want the unresolved view from lexd
+	# too. Without this flag, include fixtures with non-existent targets abort.
+	lex_output="$("$LEX_CLI" inspect "$REPO_DIR/$file" parity --no-includes 2>/dev/null || :)"
+	if [[ -z "$lex_output" ]]; then
+		echo "lexd produced no output for $file" >&2
+		return 1
+	fi
 
-    ts_output="$(cd "$REPO_DIR" && npx tree-sitter parse -x "$file" 2>/dev/null \
-        | node "$REPO_DIR/app-bin/parity-print.js" 2>/dev/null || :)"
-    if [[ -z "$ts_output" ]]; then
-        echo "tree-sitter/parity-print produced no output for $file" >&2
-        return 1
-    fi
+	ts_output="$(cd "$REPO_DIR" && npx tree-sitter parse -x "$file" 2>/dev/null |
+		node "$REPO_DIR/app-bin/parity-print.js" 2>/dev/null || :)"
+	if [[ -z "$ts_output" ]]; then
+		echo "tree-sitter/parity-print produced no output for $file" >&2
+		return 1
+	fi
 
-    if ! diff <(echo "$lex_output") <(echo "$ts_output") >/dev/null 2>&1; then
-        echo "Parity mismatch for $file" >&2
-        diff --unified=3 <(echo "$lex_output") <(echo "$ts_output") | head -30 >&2
-        return 1
-    fi
+	if ! diff <(echo "$lex_output") <(echo "$ts_output") >/dev/null 2>&1; then
+		echo "Parity mismatch for $file" >&2
+		diff --unified=3 <(echo "$lex_output") <(echo "$ts_output") | head -30 >&2
+		return 1
+	fi
 }

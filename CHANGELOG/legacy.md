@@ -4,7 +4,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [0.11.0] - 2026-05-21
 
-
 ### Changed
 
 - Spell-check captures in `queries/highlights.scm` rewritten to match the canonical policy: spell-check all prose by default; suppress only annotation labels/params, verbatim bodies, references, and non-prose inline atoms (code spans, math spans, escape sequences). Verbatim block *subjects* and the trailing descriptor after `:: label ::` are now spell-checked. Uses `#has-ancestor?` + `#not-has-parent?` so the verbatim's own subject field stays prose-checked while nested prose inside the body is suppressed at arbitrary depth (#45).
@@ -12,13 +11,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 ### Added
 
 - `test/spellcheck-fixture.lex` — a fixture with deliberate typos seeded at every prose / non-prose position. Downstream editor e2e tests (`nvim`, `lexed`, `vscode`, `zed-lex`) mirror this file and assert against the same matrix (#45).
-## [0.10.4] - 2026-05-18
 
+## [0.10.4] - 2026-05-18
 
 ### Changed
 
 - Release pipeline migrated to `arthur-debert/release/.github/workflows/tree-sitter.yml@v1` (see #42). Trigger contract is now `workflow_dispatch` (matches the cross-repo cascade-handler pattern). Corpus tests run as a release-time gate before the tag is pushed; missing WASM or empty `queries/` now hard-fails the build rather than producing a silently-incomplete tarball.
 - CHANGELOG.md reformatted to strict Keep-a-Changelog spec (bracketed `[Unreleased]` / `[X.Y.Z] - DATE` headings) so the canonical `prepare-release-npm` composite action can auto-roll release notes.
+
 ## [0.10.3] - 2026-05-17
 
 - (no release notes recorded)

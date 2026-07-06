@@ -18,13 +18,16 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-die() { echo "$1" >&2; exit 2; }
+die() {
+	echo "$1" >&2
+	exit 2
+}
 
 QUICK=false
 for arg in "$@"; do
-    case "$arg" in
-        --quick) QUICK=true ;;
-    esac
+	case "$arg" in
+	--quick) QUICK=true ;;
+	esac
 done
 
 cd "$REPO_DIR"
@@ -40,9 +43,9 @@ echo ""
 echo "═══ test-tree-shape ═══"
 echo ""
 if npx tree-sitter test; then
-    true
+	true
 else
-    FAILED=true
+	FAILED=true
 fi
 
 # --- 3. Generate bats tests from spec fixtures ---
@@ -56,58 +59,58 @@ echo ""
 echo "═══ test-no-errors ═══"
 echo ""
 if npx bats test/generated/no-errors.bats; then
-    true
+	true
 else
-    FAILED=true
+	FAILED=true
 fi
 
 # --- 5. Parity (bats) ---
 if ! $QUICK; then
-    # Ensure lexd is available
-    export LEX_CLI="${LEX_CLI_PATH:-}"
-    if [[ -z "$LEX_CLI" ]]; then
-        echo ""
-        echo "Fetching lexd via fetch-deps..."
-        # fetch-deps is on PATH locally (via dodot). In CI, bootstrap it
-        # from the release repo if not found.
-        if ! command -v fetch-deps &>/dev/null; then
-            _fetch_deps="$(mktemp)"
-            if curl -fsSL -o "$_fetch_deps" \
-                "https://raw.githubusercontent.com/arthur-debert/release/main/bin/fetch-deps"; then
-                chmod +x "$_fetch_deps"
-                "$_fetch_deps" --if-missing lexd-cli || :
-            fi
-            rm -f "$_fetch_deps"
-        else
-            fetch-deps --if-missing lexd-cli || :
-        fi
-        if [[ -x "$REPO_DIR/deps/lexd" ]]; then
-            LEX_CLI="$REPO_DIR/deps/lexd"
-        fi
-    fi
-    if [[ -z "$LEX_CLI" ]] || [[ ! -x "$LEX_CLI" ]]; then
-        die "Error: could not obtain lexd binary."
-    else
-        export LEX_CLI
-        echo ""
-        echo "═══ test-parity (lexd: $($LEX_CLI --version 2>&1)) ═══"
-        echo ""
-        if npx bats test/generated/parity.bats; then
-            true
-        else
-            FAILED=true
-        fi
-    fi
+	# Ensure lexd is available
+	export LEX_CLI="${LEX_CLI_PATH:-}"
+	if [[ -z "$LEX_CLI" ]]; then
+		echo ""
+		echo "Fetching lexd via fetch-deps..."
+		# fetch-deps is on PATH locally (via dodot). In CI, bootstrap it
+		# from the release repo if not found.
+		if ! command -v fetch-deps &>/dev/null; then
+			_fetch_deps="$(mktemp)"
+			if curl -fsSL -o "$_fetch_deps" \
+				"https://raw.githubusercontent.com/arthur-debert/release/main/bin/fetch-deps"; then
+				chmod +x "$_fetch_deps"
+				"$_fetch_deps" --if-missing lexd-cli || :
+			fi
+			rm -f "$_fetch_deps"
+		else
+			fetch-deps --if-missing lexd-cli || :
+		fi
+		if [[ -x "$REPO_DIR/deps/lexd" ]]; then
+			LEX_CLI="$REPO_DIR/deps/lexd"
+		fi
+	fi
+	if [[ -z "$LEX_CLI" ]] || [[ ! -x "$LEX_CLI" ]]; then
+		die "Error: could not obtain lexd binary."
+	else
+		export LEX_CLI
+		echo ""
+		echo "═══ test-parity (lexd: $($LEX_CLI --version 2>&1)) ═══"
+		echo ""
+		if npx bats test/generated/parity.bats; then
+			true
+		else
+			FAILED=true
+		fi
+	fi
 else
-    echo ""
-    echo "═══ test-parity (skipped: --quick) ═══"
+	echo ""
+	echo "═══ test-parity (skipped: --quick) ═══"
 fi
 
 # --- Summary ---
 echo ""
 if $FAILED; then
-    echo "RESULT: FAIL"
-    exit 1
+	echo "RESULT: FAIL"
+	exit 1
 else
-    echo "RESULT: PASS"
+	echo "RESULT: PASS"
 fi

@@ -53,6 +53,7 @@ and manual. No silent skips, no context-dependent behavior. If a dependency is
 needed, it's fetched automatically.
 
 Three checks, clear semantics:
+
 - **tree-shape** (inline in bin/check): does the grammar produce expected tree structures? (corpus tests via `npx tree-sitter test`)
 - **test-no-errors**: can tree-sitter parse all spec documents without ERROR nodes? (bats)
 - **test-parity**: does tree-sitter's CST match lex-core's AST? (bats)

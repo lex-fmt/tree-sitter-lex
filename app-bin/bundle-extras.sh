@@ -25,13 +25,13 @@ set -euo pipefail
 # (corpus-test already ran successfully in a prior job; this is the
 # remaining release-time invariant).
 if [ -f app-bin/smoke-grammars.sh ]; then
-  echo "→ smoke-checking shared/embedded-grammars.json"
-  bash app-bin/smoke-grammars.sh
+	echo "→ smoke-checking shared/embedded-grammars.json"
+	bash app-bin/smoke-grammars.sh
 fi
 
 # Ship the manifest itself so editors can read it at install time.
 if [ -f shared/embedded-grammars.json ]; then
-  mkdir -p "${BUNDLE_DIR}/shared"
-  cp shared/embedded-grammars.json "${BUNDLE_DIR}/shared/"
-  echo "→ added shared/embedded-grammars.json to bundle"
+	mkdir -p "${BUNDLE_DIR}/shared"
+	cp shared/embedded-grammars.json "${BUNDLE_DIR}/shared/"
+	echo "→ added shared/embedded-grammars.json to bundle"
 fi

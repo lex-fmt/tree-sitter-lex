@@ -20,56 +20,56 @@ mkdir -p "$OUT_DIR"
 # --- Load ignored files ---
 IGNORED=""
 if [[ -f "$IGNORE_LIST" ]]; then
-    while IFS= read -r line; do
-        line="${line%%#*}"
-        line="$(echo "$line" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
-        [[ -z "$line" ]] && continue
-        IGNORED="${IGNORED}|${line}"
-    done < "$IGNORE_LIST"
+	while IFS= read -r line; do
+		line="${line%%#*}"
+		line="$(echo "$line" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+		[[ -z "$line" ]] && continue
+		IGNORED="${IGNORED}|${line}"
+	done <"$IGNORE_LIST"
 fi
 
 is_ignored() {
-    echo "$IGNORED" | grep -qF "|${1}"
+	echo "$IGNORED" | grep -qF "|${1}"
 }
 
 # --- Generate no-errors.bats ---
 {
-    echo '#!/usr/bin/env bats'
-    echo ''
-    echo 'load "../helpers"'
-    echo ''
-    while IFS= read -r f; do
-        rel="${f#"$REPO_DIR"/}"
-        name=$(echo "$rel" | sed 's|comms/specs/||; s|\.lex$||')
-        echo "@test \"no-errors: $name\" {"
-        echo "    assert_no_errors \"$rel\""
-        echo "}"
-        echo ""
-    done < <(find "$REPO_DIR/comms/specs" -name "*.lex" | sort)
-} > "$OUT_DIR/no-errors.bats"
+	echo '#!/usr/bin/env bats'
+	echo ''
+	echo 'load "../helpers"'
+	echo ''
+	while IFS= read -r f; do
+		rel="${f#"$REPO_DIR"/}"
+		name=$(echo "$rel" | sed 's|comms/specs/||; s|\.lex$||')
+		echo "@test \"no-errors: $name\" {"
+		echo "    assert_no_errors \"$rel\""
+		echo "}"
+		echo ""
+	done < <(find "$REPO_DIR/comms/specs" -name "*.lex" | sort)
+} >"$OUT_DIR/no-errors.bats"
 
 # --- Generate parity.bats ---
 {
-    echo '#!/usr/bin/env bats'
-    echo ''
-    echo 'load "../helpers"'
-    echo ''
-    for f in "$REPO_DIR"/comms/specs/elements/**/*.lex; do
-        rel="${f#"$REPO_DIR"/}"
-        name=$(echo "$rel" | sed 's|comms/specs/elements/||; s|\.lex$||')
-        if is_ignored "$rel"; then
-            echo "# bats test_tags=ignored"
-            echo "@test \"parity: $name\" {"
-            echo "    skip \"acknowledged divergence\""
-            echo "}"
-        else
-            echo "@test \"parity: $name\" {"
-            echo "    assert_parity \"$rel\""
-            echo "}"
-        fi
-        echo ""
-    done
-} > "$OUT_DIR/parity.bats"
+	echo '#!/usr/bin/env bats'
+	echo ''
+	echo 'load "../helpers"'
+	echo ''
+	for f in "$REPO_DIR"/comms/specs/elements/**/*.lex; do
+		rel="${f#"$REPO_DIR"/}"
+		name=$(echo "$rel" | sed 's|comms/specs/elements/||; s|\.lex$||')
+		if is_ignored "$rel"; then
+			echo "# bats test_tags=ignored"
+			echo "@test \"parity: $name\" {"
+			echo "    skip \"acknowledged divergence\""
+			echo "}"
+		else
+			echo "@test \"parity: $name\" {"
+			echo "    assert_parity \"$rel\""
+			echo "}"
+		fi
+		echo ""
+	done
+} >"$OUT_DIR/parity.bats"
 
 echo "Generated: $OUT_DIR/no-errors.bats ($(grep -c '@test' "$OUT_DIR/no-errors.bats") tests)"
 echo "Generated: $OUT_DIR/parity.bats ($(grep -c '@test' "$OUT_DIR/parity.bats") tests)"
