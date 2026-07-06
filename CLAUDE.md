@@ -7,7 +7,7 @@ language injection, and structural navigation for editors.
 
 ## Repo Structure
 
-```
+```text
 grammar.js          Grammar rules (block structure, inline elements)
 src/scanner.c       External scanner (indentation, emphasis flanking)
 src/parser.c        Generated parser (run `npx tree-sitter generate`)
