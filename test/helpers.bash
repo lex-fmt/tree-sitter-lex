@@ -35,8 +35,8 @@ assert_parity() {
 		return 1
 	fi
 
-	ts_output="$(cd "$REPO_DIR" && npx tree-sitter parse -x "$file" 2>/dev/null |
-		node "$REPO_DIR/app-bin/parity-print.js" 2>/dev/null || :)"
+	ts_output="$({ cd "$REPO_DIR" && npx tree-sitter parse -x "$file" 2>/dev/null |
+		node "$REPO_DIR/app-bin/parity-print.js" 2>/dev/null; } || :)"
 	if [[ -z "$ts_output" ]]; then
 		echo "tree-sitter/parity-print produced no output for $file" >&2
 		return 1
