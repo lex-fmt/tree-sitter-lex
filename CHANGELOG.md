@@ -1,14 +1,21 @@
-<!-- generated - do not edit. See CHANGELOG/README.txt -->
+<!-- generated - do not edit; fragments live in CHANGELOG/ (`shipit changelog render` regenerates this file) -->
 
 # Changelog
 
 ## Unreleased
+
+- Fix on-upstream-released cascade startup_failure by granting the handler contents/pull-requests write (release#805)
+- Download lexd binary into deps/ instead of bin/
+- Migrate the editor cascade fan-out to tree-sitter.yml's notify-downstreams input (drop the hand-rolled job; needs release@v3.8.0+)
+- ci: migrate release reusable-workflow callers from @v2 to @v3
+- Add corpus tests for nested sessions, multiple top-level sessions, inline-formatted titles, and subject-style titles
 
 ## 0.11.2 - 2026-06-01
 
 - Migrate changelog handling to the fragment-directory model
   (arthur-debert/release#201). Future entries go in
   CHANGELOG/unreleased-<slug>.md fragments via `bin/changelog add`.
+
 
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
