@@ -10,6 +10,10 @@ node_modules/
 !/bin/changelog-cut
 !/bin/changelog-render
 *.wasm
-package-lock.json
+# package-lock.json is COMMITTED (see below): a lockfile makes node-deps
+# installs deterministic — CI's tree-sitter-ci.yml switches from `npm install`
+# to `npm ci` when it is present, and shipit tree provisioning (#543) needs a
+# recognized lockfile (or a packageManager pin) to pick a frozen install
+# instead of refusing.
 .padz
 .deps/
