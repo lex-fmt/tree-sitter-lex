@@ -17,7 +17,7 @@ queries/
   textobjects.scm   nvim-treesitter structural selection
 test/corpus/        Tree-sitter corpus tests
 app-bin/
-  test-all          Single entry point — runs all repo checks (used by CI)
+  test-all          Single entry point — runs all repo checks (CI runs it via the test-full lane)
   parity-print.js   Converts tree-sitter XML to parity format
   parity-ignored.txt  Acknowledged parity divergences (bats skip)
   bump-grammars.sh  Quarterly grammar dependency bump
