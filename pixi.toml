@@ -15,6 +15,21 @@ lint = "./bin/shipit lint"
 logs = "./bin/shipit logs"
 provision-lexd = "./bin/shipit provision lexd"
 # <<< shipit-managed tasks <<<
+# The wf-checks TEST LANE's run (ADP02-WS03, #87) — NOT the managed bare `test`
+# task above: `./bin/shipit test` dispatches the npm toolchain leg (`npm test`
+# -> `tree-sitter test`, corpus only), while this repo's real umbrella is
+# app-bin/test-all (corpus + bats no-errors + parity), the same entry the
+# legacy CI ran. The lane SELF-PROVISIONS (the lex#829-proven pattern) because
+# the wf-checks checkout has no submodule support and a hosted runner has no
+# node_modules: init the `comms` submodule (spec fixtures the bats generator
+# reads), `npm ci` the tree-sitter CLI + bats from the committed lockfile, then
+# run the umbrella. test-all provisions its OWN lexd at the shared/lex-deps.json
+# pin (v0.14.1 — the version the parity contract is written against;
+# `shipit provision lexd` would install latest and is deliberately NOT used
+# here). smoke-grammars.sh rides along because the legacy check-command chained
+# it (`bin/check && app-bin/smoke-grammars.sh`) — same coverage, same order.
+# Idempotent and laptop-runnable: `pixi run --locked test-full`.
+test-full = "git submodule update --init --recursive && npm ci && app-bin/test-all && app-bin/smoke-grammars.sh"
 
 [feature.lint.dependencies]
 # >>> shipit-managed lint deps (do not edit; regenerate via `shipit install`) >>>
@@ -39,6 +54,19 @@ actionlint = "1.7.*"
 lefthook = "2.1.*"
 # <<< shipit-managed lint deps <<<
 
+[feature.lint.tasks]
+# The wf-checks LINT LANE's run (ADP02-WS03, #87), byte-modeled on shipit's own
+# and lex#829's: the lint toolchain (ruff/shfmt/prettier/markdownlint/
+# actionlint/...) lives in THIS feature's env, so the lane task must resolve
+# into the lint env — the managed bare `lint` task is a fixed plain string that
+# runs in the default env (where none of those tools exist on a hosted runner)
+# and cannot provision the lex leg's lexd. `provision lexd` inline lands lexd
+# in this env's prefix, idempotent. Defined ONLY in this feature, so it exists
+# in EXACTLY ONE env (lint) and bare `pixi run lint-full` resolves
+# unambiguously — the wf-checks matrix job's `pixi run --locked lint-full` and
+# a laptop run are identical.
+lint-full = { cmd = "./bin/shipit provision lexd && ./bin/shipit lint" }
+
 [environments]
 # >>> shipit-managed environments (do not edit; regenerate via `shipit install`) >>>
 lint = ["lint"]
@@ -57,3 +85,16 @@ lint = ["lint"]
 nodejs = "26.*"
 pnpm = "11.*"
 # <<< shipit-managed node deps <<<
+# Consumer-owned dependencies (outside the shipit-managed block above),
+# added for the wf-checks lanes (ADP02-WS03, #87): both lanes run
+# `pixi run --locked <task>` on a hosted runner where nothing outside pixi
+# is provisioned.
+# uv backs the pinned bin/shipit launcher (ADR-0033: it provisions the repo's
+# pinned shipit via uv, PATH-independent). The wf-checks plan job and the lint
+# lane both run ./bin/shipit, and neither the block nor the managed set
+# provisions uv for a consumer (known gap: shipit#758) — so the launcher's one
+# prerequisite must ride the env. Same consumer unblock as lex#829.
+uv = ">=0.5"
+# jq backs app-bin/smoke-grammars.sh (part of the test lane), so the lane is
+# self-contained rather than leaning on the runner image's system jq.
+jq = "1.*"

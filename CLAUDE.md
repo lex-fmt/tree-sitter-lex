@@ -16,9 +16,8 @@ queries/
   injections.scm    Embedded language injection (verbatim blocks)
   textobjects.scm   nvim-treesitter structural selection
 test/corpus/        Tree-sitter corpus tests
-bin/
-  check             Single entry point — runs all checks (used by CI)
 app-bin/
+  test-all          Single entry point — runs all repo checks (CI runs it via the test-full lane)
   parity-print.js   Converts tree-sitter XML to parity format
   parity-ignored.txt  Acknowledged parity divergences (bats skip)
   bump-grammars.sh  Quarterly grammar dependency bump
@@ -37,8 +36,10 @@ shared/
 
 ```sh
 npm install                  # install tree-sitter CLI (one time)
-bin/check                                             # run ALL checks (same as CI)
-bin/check --quick                                     # skip parity (for rapid iteration)
+pixi run --locked lint-full                           # the CI lint lane (managed lint gate)
+pixi run --locked test-full                           # the CI test lane (self-provisions, then test-all + smoke)
+app-bin/test-all                                      # run ALL repo checks
+app-bin/test-all --quick                              # skip parity (for rapid iteration)
 npx tree-sitter test                                  # just corpus tests
 npx bats test/generated/no-errors.bats                # just error-free parsing (after generate)
 npx bats test/generated/parity.bats                   # just parity (after generate, needs LEX_CLI)
@@ -48,13 +49,14 @@ npx bats --filter "fullwidth" test/generated/         # pattern match
 
 ## Testing Philosophy
 
-One entry point (`bin/check`) runs the same checks everywhere — CI
-and manual. No silent skips, no context-dependent behavior. If a dependency is
-needed, it's fetched automatically.
+One entry point (`app-bin/test-all`) runs the same checks everywhere — CI (the
+wf-checks `test` lane's `test-full` task wraps it) and manual. No silent skips,
+no context-dependent behavior. If a dependency is needed, it's fetched
+automatically.
 
 Three checks, clear semantics:
 
-- **tree-shape** (inline in bin/check): does the grammar produce expected tree structures? (corpus tests via `npx tree-sitter test`)
+- **tree-shape** (inline in app-bin/test-all): does the grammar produce expected tree structures? (corpus tests via `npx tree-sitter test`)
 - **test-no-errors**: can tree-sitter parse all spec documents without ERROR nodes? (bats)
 - **test-parity**: does tree-sitter's CST match lex-core's AST? (bats)
 
