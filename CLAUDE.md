@@ -1,4 +1,4 @@
-@.claude/IMPORTANT-RELEASE.md
+@AGENTS.md
 
 # tree-sitter-lex
 
@@ -68,11 +68,12 @@ test-no-errors and test-parity use [bats-core](https://github.com/bats-core/bats
 
 ## Releasing
 
-This repo participates in the lex release cascade. Cutting a release here is triggered automatically when comms releases (via the `on-upstream-released` handler workflow). Once cut, it cascades to vscode + nvim + lexed via `notify-downstreams`.
-
-For a manual cut: push an annotated tag (`git tag -a vX.Y.Z -m "..." && git push origin vX.Y.Z`). CI builds `tree-sitter.tar.gz` (parser sources, WASM module, query files); editor repos download this artifact via `shared/lex-deps.json`.
-
-Design + ops + gotchas: [arthur-debert/release/docs/lex-release-cascade.md](https://github.com/arthur-debert/release/blob/main/docs/lex-release-cascade.md).
+This repo participates in the lex release cascade. Cut a release through the
+shipit caller: `gh workflow run shipit-release.yml -f version=X.Y.Z -f stage=full`.
+CI builds `tree-sitter.tar.gz` (parser sources, WASM module, query files); editor
+repos download this artifact via `shared/lex-deps.json`. On a real (non-rc)
+release, the notify-downstreams endpoint dispatches `upstream-release` to
+vscode + nvim + lexed.
 
 ## Architecture
 
