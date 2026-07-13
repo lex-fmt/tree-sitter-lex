@@ -68,8 +68,41 @@ run = "test-full"
 required = true
 local = true
 
+# [toolchains] — the ADR-0007 path→toolchain map, the repo's structural
+# self-description. The root leg is the GRAMMAR (build = `tree-sitter
+# generate`, test = `tree-sitter test` — the closed-registry tree-sitter
+# toolchain, shipit#824), not an npm package: the install-seeded `npm`
+# detection keyed off package.json, but that manifest only carries the
+# tree-sitter CLI devDependency — nothing here builds or publishes an npm
+# package (legacy `publish-npm: false`). The switch is what lets the
+# [artifacts] build target below resolve to a leg (an [artifacts] build
+# target whose toolchain has no [toolchains] leg is refused).
 [toolchains]
-"." = "npm"
+"." = "tree-sitter"
+
+# [artifacts] — the declared release surface (ADP02-WS09 #90, the first
+# consumer fire of shipit's tree-sitter composition + notify-downstreams
+# cascade, shipit#824/TOL02-WS16). ONE artifact, matching the legacy
+# surface (release.yml → tree-sitter.yml@v3, verified against v0.11.2):
+#   - build: the tree-sitter leg above (`tree-sitter generate`);
+#   - bundle: the `tarball` composition → `tree-sitter.tar.gz` (the
+#     artifact NAME is the asset name — parity with the legacy asset the
+#     editor repos fetch via shared/lex-deps.json). Platform-independent
+#     generated C source, so no `platforms` list: the default lane builds
+#     it once;
+#   - endpoints: gh-release (rides the workflow GITHUB_TOKEN) +
+#     notify-downstreams — the layer-2 cascade (lex-fmt/lex#640): one
+#     `upstream-release` repository_dispatch per repo below on a REAL
+#     release (the RC guard/prerelease plan suppress it), replacing the
+#     legacy `notify-downstreams:` input. Requires the cross-repo
+#     DOWNSTREAM_DISPATCH_TOKEN at publish (the ambient GITHUB_TOKEN
+#     cannot dispatch into another repo).
+# npm publish stays off, as in legacy: no npm endpoint, no npm build leg.
+[artifacts.tree-sitter]
+build = ["tree-sitter"]
+bundle = { composition = "tarball" }
+endpoints = ["gh-release", "notify-downstreams"]
+downstreams = ["lex-fmt/vscode", "lex-fmt/nvim", "lex-fmt/lexed"]
 
 [shipit]
 version = "84818feb7b7c39ebdb5875028828db05b2d65f8a"
