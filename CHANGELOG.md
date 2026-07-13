@@ -9,6 +9,11 @@
 - Migrate the editor cascade fan-out to tree-sitter.yml's notify-downstreams input (drop the hand-rolled job; needs release@v3.8.0+)
 - ci: migrate release reusable-workflow callers from @v2 to @v3
 - Add corpus tests for nested sessions, multiple top-level sessions, inline-formatted titles, and subject-style titles
+- ci: adopt the shipit release pipeline (shipit-release.yml caller +
+  declared tree-sitter artifact) — releases still ship the same
+  `tree-sitter.tar.gz` asset and notify the editor repos
+  (vscode/nvim/lexed) on real releases; the legacy release.yml caller
+  remains until the release-candidate proof
 
 ## 0.11.2 - 2026-06-01
 
