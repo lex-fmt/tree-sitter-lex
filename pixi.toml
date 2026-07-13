@@ -33,9 +33,10 @@ test-full = "git submodule update --init --recursive && npm ci && app-bin/test-a
 
 [feature.lint.dependencies]
 # >>> shipit-managed lint deps (do not edit; regenerate via `shipit install`) >>>
-# The fleet-pinned lint toolchain (arthur-debert/shipit docs/legacy-prd/adoption.md: the managed set owns
-# the consumer environment). Canonical versions live HERE — a bump is one data
-# edit, rolled fleet-wide on each consumer's next `shipit install` reconcile.
+# The fleet-pinned lint toolchain (docs/legacy-prd/adoption.md in the
+# arthur-debert/shipit repo: the managed set owns the consumer environment).
+# Canonical versions live HERE — a bump is one data edit, rolled fleet-wide on
+# each consumer's next `shipit install` reconcile.
 ruff = "0.15.*"
 # shellcheck is PINNED DOWN to 0.10.* (not 0.11): shellcheck 0.11.0 has an SC2218
 # reaching-definitions false positive — a call to an EARLIER-defined function is
@@ -73,6 +74,29 @@ lint = ["lint"]
 # <<< shipit-managed environments <<<
 
 [dependencies]
+# >>> shipit-managed tree-sitter release deps (do not edit; regenerate via `shipit install`) >>>
+# The tree-sitter toolchain's CLI (#890, closing TOL02-WS17 open hole 7):
+# the tree-sitter toolchain's build slot runs `tree-sitter generate` and its
+# test slot `tree-sitter test` (the corpus lane), and the release stages
+# execute shipit in the DEFAULT pixi env (`pixi run --locked ./bin/shipit`),
+# so the CLI anchors HERE — [dependencies], not a feature — where that run's
+# PATH resolves it. Delivered on the tree-sitter toolchain DECLARATION (a
+# `.shipit.toml` [toolchains] leg — no manifest signals a grammar, the
+# wasm-pack→node-deps union mechanics, `Toolchain.provisions_signal`).
+# Provisioned from conda-forge under setup-pixi's lockfile-keyed cache (the
+# #582 doctrine: the release run NEVER installs at run time). Pinned to the
+# minor line (`0.25.*` — conda match-spec) in PARITY with the fleet grammar
+# consumer's own devDependency reference (tree-sitter-lex pins `^0.25.0`):
+# the generated parser's shape follows the CLI's minor line, so this pin and
+# the consumers' devDependency line move together — bump BOTH in one story,
+# never one side alone. A bump is one data edit, rolled out on each
+# consumer's next `shipit install` reconcile. If this repo no longer ships a
+# tree-sitter grammar (the [toolchains] tree-sitter leg is gone), delete this
+# block and its `pixi.toml#shipit-tree-sitter-release-deps` entry in
+# .shipit.toml's [managed] table — a reconcile only ADDS toolchain blocks, it
+# never retires one.
+tree-sitter-cli = "0.25.*"
+# <<< shipit-managed tree-sitter release deps <<<
 # >>> shipit-managed node deps (do not edit; regenerate via `shipit install`) >>>
 # The fleet-pinned node runtime (#547 Layer 1) — delivered because this repo
 # tracks a package.json. Unlike the rust/go blocks this is NOT a linter
