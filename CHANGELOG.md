@@ -8,6 +8,12 @@
 - Download lexd binary into deps/ instead of bin/
 - Migrate the editor cascade fan-out to tree-sitter.yml's notify-downstreams input (drop the hand-rolled job; needs release@v3.8.0+)
 - ci: migrate release reusable-workflow callers from @v2 to @v3
+- ci: remove the legacy release path — the release.yml caller
+  (tree-sitter.yml@v3, incl. its notify-downstreams wiring), the
+  on-upstream-released legacy cascade handler, the retired
+  copilot-review.yml caller, and bin/install-release-core.
+  shipit-release.yml is now the only release surface (replacement
+  proof: rc 0.12.0-release-rc, run 29231015838).
 - Add corpus tests for nested sessions, multiple top-level sessions, inline-formatted titles, and subject-style titles
 - ci: adopt the shipit release pipeline (shipit-release.yml caller +
   declared tree-sitter artifact) — releases still ship the same
