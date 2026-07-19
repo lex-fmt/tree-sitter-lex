@@ -73,6 +73,30 @@ lint = ["lint", "shipit-lexd"]
 # <<< shipit-managed environments <<<
 
 [dependencies]
+# >>> shipit-managed conda packager (do not edit; regenerate via `shipit install`) >>>
+# The conda ENDPOINT's packager (ARF01-WS01 #950, ADR-0064/0070; re-gated
+# #1071). `shipit release publish`'s conda endpoint runs `rattler-build build`
+# to repackage a final release binary into a `.conda` and `rattler-build
+# publish` to push+reindex the producing repo's per-repo Artifact channel.
+# rattler-build is the ENDPOINT's tool, not a toolchain tool — so this block is
+# delivered iff the repo declares a `conda` endpoint on ANY `[artifacts.*]`
+# (any composition — a rust binary, a tree-sitter `tarball` grammar, a future
+# python/lua producer), toolchain-INDEPENDENT. Its former home was the rust
+# release-deps block (rust repos were the first conda producers, WS03/ARF02),
+# which starved a NON-rust conda producer of its packager — the #1071 seed
+# failure (tree-sitter-lex declared conda but `publish` died `No such file …
+# rattler-build`). rattler-build is on conda-forge, so it anchors in the
+# DEFAULT env's [dependencies] — the wf-release stages execute shipit via bare
+# `pixi run --locked ./bin/shipit`, so the packager must be on THAT run's PATH.
+# Provisioned under setup-pixi's lockfile-keyed cache (the #582 doctrine: the
+# release run NEVER installs at run time — publish fails loudly naming this
+# reconcile instead). Pinned to the minor line (`0.69.*` — conda match-spec);
+# seed-validated at 0.69 against the live channel (#1049 — 0.68.* panicked
+# during the S3 upload: `opendal-core 0.57.0 … concurrent tasks executed with
+# no executor`, even with correct AWS_* creds). A bump is one data edit, rolled
+# out on each consumer's next `shipit install` reconcile.
+rattler-build = "0.69.*"
+# <<< shipit-managed conda packager <<<
 # >>> shipit-managed tree-sitter release deps (do not edit; regenerate via `shipit install`) >>>
 # The tree-sitter toolchain's CLI (#890, closing TOL02-WS17 open hole 7):
 # the tree-sitter toolchain's build slot runs `tree-sitter generate` and its
@@ -133,35 +157,40 @@ jq = "1.*"
 # binary constant to this managed block (ADR-0047: not consumer config).
 channels = ["https://storage.googleapis.com/shipit-artifacts-public/lex-fmt/lex"]
 
-# The fleet-pinned lexd, PLATFORM-SCOPED via pixi `[target]` tables to the
-# channel's CLOSED SERVED SET (#1068) — `SERVED_SUBDIRS`
-# (`src/shipit/channel/buckets.py`): osx-arm64/linux-64/linux-aarch64 AND win-64.
-# The one target table per served subdir below IS that set; keep the two in step
-# (drift-guarded by `test_load_units_includes_the_managed_lexd_feature_block`,
-# which asserts these targets == `SERVED_SUBDIRS`). A bump is one edit here,
-# rolled fleet-wide on each consumer's next `shipit install` reconcile;
-# exact-pinned (`==`) so uniformity is a single version, never a resolved range.
+# The fleet-pinned lexd, PLATFORM-SCOPED via pixi `[target]` tables. This file is
+# the block HEADER; `shipit install` GENERATES one
+# `[feature.shipit-lexd.target.<plat>.dependencies]` table below per platform in
+# (this repo's declared `[workspace].platforms` ∩ the channel's CLOSED SERVED SET
+# — `SERVED_SUBDIRS`, `src/shipit/channel/buckets.py`:
+# osx-arm64/linux-64/linux-aarch64 AND win-64), pinned to `LEXD_PIN`
+# (`src/shipit/install/units.py`, the single pin edit) — NEVER a blanket
+# `[feature.shipit-lexd.dependencies]`. See `units.lexd_block`; a bump is one edit
+# to `LEXD_PIN`, rolled fleet-wide on each consumer's next reconcile.
 #
-# Scoping is load-bearing AND fail-closed-preserving:
+# Why intersect with the repo's OWN declared platforms (#1072): a `[target]`
+# selector for a platform the workspace does NOT declare makes pixi warn on EVERY
+# invocation (`target selector 'win-64' does not match any of the platforms
+# supported by the workspace`) — fleet-wide noise (hit on shipit's own `main`
+# after #1068 emitted a fixed all-of-served target set). A repo emits a target
+# only for a platform it actually declares.
+#
+# Why intersect with the served set (#1068) — load-bearing AND fail-closed:
 #  - A BLANKET `[feature.shipit-lexd.dependencies]` applied lexd to EVERY platform
 #    a composing env declares, so a consumer declaring a platform OUTSIDE the
 #    served set (e.g. osx-64, Intel Mac) had no channel candidate and got an
 #    unsatisfiable lint-env solve — `shipit install` then failed closed with no
-#    commit and no reconcile (#1068). Platforms NOT in the served set now carry
-#    NO lexd dep, so their lint env SOLVES and install/reconcile no longer breaks.
+#    commit and no reconcile (#1068). Platforms NOT in the served set carry NO
+#    lexd dep, so their lint env SOLVES and install/reconcile no longer breaks.
 #  - win-64 IS in the served set (served, merely owner-PAUSED under the Windows
-#    build pause #895, ADR-0071), so it KEEPS a target dep. The channel serves no
-#    win-64 lexd while the pause holds, so a win-64 lint solve finds no candidate
-#    and FAILS CLOSED — ADR-0071's "Windows consumers fail closed, loudly." Drop
-#    the win-64 target and a win-64 consumer would instead solve WITHOUT lexd
-#    (fail-open), silently breaking that invariant. It re-resolves automatically
-#    when #895 lifts and the channel produces win-64 — no edit here.
+#    build pause #895, ADR-0071). A repo that DECLARES win-64 keeps a win-64
+#    target and FAILS CLOSED at solve (the channel serves no win-64 lexd while the
+#    pause holds — ADR-0071's "Windows consumers fail closed, loudly"); a repo
+#    that does NOT declare win-64 emits no win-64 target (and no dangling-selector
+#    warning). It re-resolves automatically when #895 lifts — no edit here.
 [feature.shipit-lexd.target.osx-arm64.dependencies]
 lexd = "==0.19.10"
 [feature.shipit-lexd.target.linux-64.dependencies]
 lexd = "==0.19.10"
 [feature.shipit-lexd.target.linux-aarch64.dependencies]
-lexd = "==0.19.10"
-[feature.shipit-lexd.target.win-64.dependencies]
 lexd = "==0.19.10"
 # <<< shipit-managed lexd feature <<<
