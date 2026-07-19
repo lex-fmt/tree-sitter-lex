@@ -4,6 +4,13 @@
 
 ## Unreleased
 
+## 0.11.4 - 2026-07-19
+
+- release: the `tree-sitter` grammar now ships to the Artifact channel as a
+  `noarch: generic` conda package (ARF02 / ADR-0076), resolvable through
+  `[artifact-deps]` instead of the legacy cross-repo fetch. Reconciled to shipit
+  v1.4.2 (conda-endpoint-gated rattler-build).
+
 ## 0.11.3 - 2026-07-19
 
 - Fix on-upstream-released cascade startup_failure by granting the handler contents/pull-requests write (release#805)
