@@ -101,7 +101,13 @@ local = true
 [artifacts.tree-sitter]
 build = ["tree-sitter"]
 bundle = { composition = "tarball" }
-endpoints = ["gh-release", "notify-downstreams"]
+# conda: a DERIVED endpoint (ADR-0076 / shipit#1064, shipped v1.4.1 — this
+#   repo is now pinned to it) that repackages the platform-independent
+#   `tree-sitter.tar.gz` (the `tarball` composition above) into ONE
+#   `noarch: generic` `.conda`, published to the channel's `noarch/` subdir.
+#   Declaring it here only makes conda SELECTABLE at dispatch (ADR-0070); the
+#   live channel seed is coordinator-owned and is NOT dispatched by this change.
+endpoints = ["gh-release", "notify-downstreams", "conda"]
 downstreams = ["lex-fmt/vscode", "lex-fmt/nvim", "lex-fmt/lexed"]
 
 [shipit]
