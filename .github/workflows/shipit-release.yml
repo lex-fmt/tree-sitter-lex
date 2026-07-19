@@ -31,19 +31,32 @@ name: shipit-release
 # (nothing darwin, nothing signable); the `sign` choice stays offered
 # because this caller rides the blessed shape, never a trimmed variant.
 #
-# Secrets — exactly the plan-required set for this plan:
+# Secrets — the plan-required set for this plan. Per the per-stage
+# intersection rule (#896), preflight re-validates the WHOLE plan at
+# prepare entry, so `prepare` (and `full`) carry the FULL plan-required
+# set, each trimmed to the block's declared secret names; `publish` carries
+# the publish-time subset:
 #   RELEASE_TOKEN              prepare's tag+branch push through the
 #                              ruleset (a GITHUB_TOKEN push would not
 #                              re-trigger workflows).
 #   DOWNSTREAM_DISPATCH_TOKEN  the notify-downstreams endpoint's
 #                              cross-repo PAT (the ambient GITHUB_TOKEN
 #                              cannot dispatch into another repo).
-#                              Forwarded to the stages that can publish
-#                              (`full`, `publish`); NOT YET PROVISIONED
+#                              Carried by `full`/`prepare`/`publish` (all
+#                              three blocks declare it); NOT YET PROVISIONED
 #                              on this repo (flagged in #90 — the
 #                              coordinator provisions it before the rc;
 #                              forwarded regardless, per the workstream
 #                              brief).
+#   ARTIFACT_CHANNEL_KEY_ID, ARTIFACT_CHANNEL_SECRET_KEY
+#                              the conda Artifact-channel endpoint's GCS
+#                              HMAC write pair (ADR-0064/0065, ARF02-WS02)
+#                              — carried by `full`/`prepare`/`publish` (all
+#                              three blocks declare them), consumed only when
+#                              the plan keeps the `conda` endpoint (the
+#                              noarch grammar seed, .shipit.toml
+#                              [artifacts.tree-sitter]). The RC guard drops
+#                              conda on a -release-rc version centrally.
 # gh-release rides the workflow's own GITHUB_TOKEN (no registry entry).
 # The Apple signing set is not forwarded: the plan carries no sign stage,
 # and preflight refuses a break-glass `--unsigned` on it.
@@ -100,6 +113,19 @@ on:
         required: false
         type: boolean
         default: false
+      endpoints:
+        description: >-
+          Per-invocation endpoint selector (ADR-0070, #1046), consumed by
+          `full`/`publish`: a comma- or space-separated endpoint-name list
+          the publish verb narrows the fire to — every other declared
+          endpoint is selector-skipped (`gh-release` cannot be deselected;
+          unknown names are refused, by the verb). Empty: the full
+          post-guard set fires (gh-release + notify-downstreams + conda).
+          Ignored by the other stages. This is what makes the scoped ARF02
+          channel seed (`gh-release,conda`) possible WITHOUT firing the
+          notify-downstreams cascade.
+        required: false
+        type: string
 
 # The standalone dispatch caller's grant (workflows.lex §8): `contents:
 # write` for prepare's push and publish's gh-release, `actions: read` for
@@ -117,9 +143,12 @@ jobs:
     with:
       version: ${{ inputs.version }}
       unsigned: ${{ inputs.unsigned }}
+      endpoints: ${{ inputs.endpoints }}
     secrets:
       RELEASE_TOKEN: ${{ secrets.RELEASE_TOKEN }}
       DOWNSTREAM_DISPATCH_TOKEN: ${{ secrets.DOWNSTREAM_DISPATCH_TOKEN }}
+      ARTIFACT_CHANNEL_KEY_ID: ${{ secrets.ARTIFACT_CHANNEL_KEY_ID }}
+      ARTIFACT_CHANNEL_SECRET_KEY: ${{ secrets.ARTIFACT_CHANNEL_SECRET_KEY }}
 
   prepare:
     if: inputs.stage == 'prepare'
@@ -129,6 +158,9 @@ jobs:
       unsigned: ${{ inputs.unsigned }}
     secrets:
       RELEASE_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+      DOWNSTREAM_DISPATCH_TOKEN: ${{ secrets.DOWNSTREAM_DISPATCH_TOKEN }}
+      ARTIFACT_CHANNEL_KEY_ID: ${{ secrets.ARTIFACT_CHANNEL_KEY_ID }}
+      ARTIFACT_CHANNEL_SECRET_KEY: ${{ secrets.ARTIFACT_CHANNEL_SECRET_KEY }}
 
   build:
     if: inputs.stage == 'build'
@@ -150,5 +182,8 @@ jobs:
       tag: ${{ inputs.tag }}
       run-id: ${{ inputs.run-id }}
       unsigned: ${{ inputs.unsigned }}
+      endpoints: ${{ inputs.endpoints }}
     secrets:
       DOWNSTREAM_DISPATCH_TOKEN: ${{ secrets.DOWNSTREAM_DISPATCH_TOKEN }}
+      ARTIFACT_CHANNEL_KEY_ID: ${{ secrets.ARTIFACT_CHANNEL_KEY_ID }}
+      ARTIFACT_CHANNEL_SECRET_KEY: ${{ secrets.ARTIFACT_CHANNEL_SECRET_KEY }}
