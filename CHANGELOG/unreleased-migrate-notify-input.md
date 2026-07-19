@@ -1,1 +1,0 @@
-- Migrate the editor cascade fan-out to tree-sitter.yml's notify-downstreams input (drop the hand-rolled job; needs release@v3.8.0+)

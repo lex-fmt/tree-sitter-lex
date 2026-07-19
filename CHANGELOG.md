@@ -4,6 +4,8 @@
 
 ## Unreleased
 
+## 0.11.3 - 2026-07-19
+
 - Fix on-upstream-released cascade startup_failure by granting the handler contents/pull-requests write (release#805)
 - Download lexd binary into deps/ instead of bin/
 - Migrate the editor cascade fan-out to tree-sitter.yml's notify-downstreams input (drop the hand-rolled job; needs release@v3.8.0+)
