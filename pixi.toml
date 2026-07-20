@@ -146,6 +146,45 @@ uv = ">=0.5"
 # self-contained rather than leaning on the runner image's system jq.
 jq = "1.*"
 
+# The WASM BACKEND for the release bundle stage (conda-direct T4, shipit#1092).
+#
+# shipit's `tarball` composition runs `tree-sitter build --wasm` before tarring,
+# so the grammar `.conda` carries `tree-sitter-lex.wasm` alongside the C `src/`,
+# `queries/` and `shared/embedded-grammars.json` (shipit#1078/#1085 — the v0.11.2
+# union the first shipit-managed cut dropped). `tree-sitter build --wasm` needs a
+# wasm backend (emscripten on PATH, or Docker) and shipit deliberately does NOT
+# provision one: it is the PRODUCER's toolchain, not the endpoint's. A run that
+# produces no wasm is a HARD bundle-stage failure, so the backend must ride the
+# env rather than the runner image — the #582 doctrine (the release run never
+# installs at run time), same reasoning as rattler-build/tree-sitter-cli above.
+#
+# PINNED to 3.1.58, NOT the newer 4.0.9: conda-forge's emscripten 4.0.9 is
+# internally inconsistent — it declares `binaryen >=117,<118` while its own emcc
+# expects binaryen 123 and passes `--no-stack-ir`, an option binaryen 117 does
+# not have, so every `tree-sitter build --wasm` dies in wasm-opt:
+#   Unknown option '--no-stack-ir'
+#   emcc: error: '.../wasm-opt ... --no-stack-ir output.wasm ...' failed
+# conda-forge tops out at binaryen 121, so no pin of the standalone package
+# repairs 4.0.9. 3.1.58 matches its own `binaryen >=117,<118` and builds a real
+# WebAssembly module (verified locally: 45002-byte wasm, `WebAssembly (wasm)
+# binary module version 0x1`). Revisit when conda-forge ships a self-consistent
+# emscripten 4.x.
+#
+# TARGET-SCOPED because emscripten has no linux-aarch64 build on conda-forge,
+# and this workspace declares that platform: a default-env `[dependencies]`
+# entry would make `pixi lock` unsatisfiable there. The bundle stage runs on
+# linux-64, and a laptop cut runs on osx-*; linux-aarch64 keeps a lockable env
+# and simply has no wasm backend, where a bundle attempt fails loudly (which is
+# the intended posture) rather than silently shipping a source-only tarball.
+[target.linux-64.dependencies]
+emscripten = "==3.1.58"
+
+[target.osx-arm64.dependencies]
+emscripten = "==3.1.58"
+
+[target.osx-64.dependencies]
+emscripten = "==3.1.58"
+
 # >>> shipit-managed lexd feature (do not edit; regenerate via `shipit install`) >>>
 [feature.shipit-lexd]
 # lexd — the lex Lang's lint-gate tool — resolved as an ordinary conda package

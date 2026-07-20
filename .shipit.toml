@@ -101,12 +101,33 @@ local = true
 [artifacts.tree-sitter]
 build = ["tree-sitter"]
 bundle = { composition = "tarball" }
-# conda: a DERIVED endpoint (ADR-0076 / shipit#1064, shipped v1.4.1 — this
-#   repo is now pinned to it) that repackages the platform-independent
-#   `tree-sitter.tar.gz` (the `tarball` composition above) into ONE
-#   `noarch: generic` `.conda`, published to the channel's `noarch/` subdir.
-#   Declaring it here only makes conda SELECTABLE at dispatch (ADR-0070); the
-#   live channel seed is coordinator-owned and is NOT dispatched by this change.
+# conda: the CONDA-DIRECT producer endpoint (ADR-0077, shipit#1092 T4;
+#   supersedes the ADR-0076/#1064 framing this comment used to carry). It
+#   packages the `tarball` composition's output DIRECTLY into ONE
+#   `noarch: generic` `.conda` for the channel's `noarch/` subdir — no
+#   gh-release round trip, no asset-name reverse-engineering: the bundle stage
+#   produces `tree-sitter.tar.gz` locally and the endpoint repackages that
+#   exact tree (gh-release merely uploads the same staged output).
+#
+#   Because the `.conda` payload IS the composition output, the grammar package
+#   carries the full editor UNION under `$PREFIX/share/tree-sitter/`:
+#     - `tree-sitter-lex.wasm`            the compiled parser editors load
+#     - `queries/*.scm`                   highlights/injections/folds/textobjects
+#     - `shared/embedded-grammars.json`   the manifest pointing editors at the
+#                                         external grammar repos to bundle
+#     - `src/` (parser.c, scanner.c, node-types.json, tree_sitter/*.h)
+#                                         the C sources native consumers compile
+#     - `grammar.js`, `package.json`, `tree-sitter.json`
+#   `shared/lex-deps.json` deliberately does NOT ride: it is this repo's own
+#   dependency pin file, not part of the grammar consumers' payload.
+#
+#   The wasm half of that union is BUILT during the bundle stage
+#   (`tree-sitter build --wasm`), which is why pixi.toml provisions an
+#   emscripten wasm backend — see the block there. A cut with no wasm backend
+#   is a hard bundle-stage failure, never a silent source-only tarball.
+#
+#   Declaring conda here only makes it SELECTABLE at dispatch (ADR-0070); the
+#   live channel seed is owner-gated and is NOT dispatched by this change.
 endpoints = ["gh-release", "notify-downstreams", "conda"]
 downstreams = ["lex-fmt/vscode", "lex-fmt/nvim", "lex-fmt/lexed"]
 
