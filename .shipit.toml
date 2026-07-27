@@ -78,8 +78,12 @@ local = true
 # nothing noticed until a consumer needed it. This lane moves that discovery to
 # the PR. It also gives the emscripten backend its only linux-64 exercise (a
 # laptop cut runs osx-arm64), which is the platform the release matrix bundles
-# on. NOT local: emscripten lives in the default env, not the lint env the hooks
-# use, and a full wasm compile on every commit only teaches `--no-verify`.
+# on. NOT local, purely on COST — not availability: emscripten sits in the
+# default [dependencies], which pixi composes into EVERY environment including
+# the `lint` one the hooks run in (pixi.lock carries emscripten under both
+# `default` and `lint`), so the hooks could run it. They should not: a full
+# `tree-sitter generate` + wasm compile on every commit and every push only
+# teaches `--no-verify`, and the PR lane catches the same break one push later.
 [lanes.build]
 run = "build-grammar"
 required = true
