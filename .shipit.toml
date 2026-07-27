@@ -68,17 +68,43 @@ run = "test-full"
 required = true
 local = true
 
+# The BUILD lane (#103) — `pixi run build-grammar`, the same entry .shipit.toml's
+# [toolchains] build slot and `shipit build` run. It exists because the release
+# now depends on a build output no other lane exercises: `tree-sitter-lex.wasm`
+# is a REQUIRED entry of the payload below, and the bundle stage collects the
+# payload rather than producing it — so a broken wasm build is a RED RELEASE,
+# discovered at cut time, on a tag. That is exactly how the wasm went missing in
+# the first place: the shipit cutover dropped the legacy workflow's wasm step and
+# nothing noticed until a consumer needed it. This lane moves that discovery to
+# the PR. It also gives the emscripten backend its only linux-64 exercise (a
+# laptop cut runs osx-arm64), which is the platform the release matrix bundles
+# on. NOT local: emscripten lives in the default env, not the lint env the hooks
+# use, and a full wasm compile on every commit only teaches `--no-verify`.
+[lanes.build]
+run = "build-grammar"
+required = true
+local = false
+
 # [toolchains] — the ADR-0007 path→toolchain map, the repo's structural
-# self-description. The root leg is the GRAMMAR (build = `tree-sitter
-# generate`, test = `tree-sitter test` — the closed-registry tree-sitter
-# toolchain, shipit#824), not an npm package: the install-seeded `npm`
-# detection keyed off package.json, but that manifest only carries the
-# tree-sitter CLI devDependency — nothing here builds or publishes an npm
-# package (legacy `publish-npm: false`). The switch is what lets the
-# [artifacts] build target below resolve to a leg (an [artifacts] build
-# target whose toolchain has no [toolchains] leg is refused).
+# self-description. The root leg is the GRAMMAR (test = `tree-sitter test` —
+# the closed-registry tree-sitter toolchain, shipit#824), not an npm package:
+# the install-seeded `npm` detection keyed off package.json, but that manifest
+# only carries the tree-sitter CLI devDependency — nothing here builds or
+# publishes an npm package (legacy `publish-npm: false`). The switch is what
+# lets the [artifacts] build target below resolve to a leg (an [artifacts]
+# build target whose toolchain has no [toolchains] leg is refused).
+#
+# The BUILD slot overrides the registry default (`tree-sitter generate`) with
+# app-bin/build-grammar.sh, which runs that generate AND `tree-sitter build
+# --wasm`. Both are our build outputs and both are declared payload below, and
+# the bundle stage COLLECTS the payload rather than producing it (conda-direct,
+# shipit ADR-0077 / #1092) — so anything the payload declares as ours to make
+# has to be made by this slot. The wasm half used to be supplied by the retired
+# `arthur-debert/release` `tree-sitter.yml@v3` workflow and was dropped by the
+# shipit cutover with nothing put in its place (#103); it is our toolchain's
+# job, not shipit's, which is why pixi.toml provisions emscripten.
 [toolchains]
-"." = "tree-sitter"
+"." = { toolchain = "tree-sitter", build = ["app-bin/build-grammar.sh"] }
 
 # [artifacts] — the declared release surface (ADP02-WS09 #90, the first
 # consumer fire of shipit's tree-sitter composition + notify-downstreams
@@ -100,18 +126,73 @@ local = true
 # npm publish stays off, as in legacy: no npm endpoint, no npm build leg.
 [artifacts.tree-sitter]
 build = ["tree-sitter"]
-bundle = { composition = "tarball" }
-# conda: a DERIVED endpoint (ADR-0076 / shipit#1064, shipped v1.4.1 — this
-#   repo is now pinned to it) that repackages the platform-independent
-#   `tree-sitter.tar.gz` (the `tarball` composition above) into ONE
-#   `noarch: generic` `.conda`, published to the channel's `noarch/` subdir.
-#   Declaring it here only makes conda SELECTABLE at dispatch (ADR-0070); the
-#   live channel seed is coordinator-owned and is NOT dispatched by this change.
+# conda: a DERIVED endpoint (ADR-0076 / shipit#1064) that repackages the
+#   platform-independent `tree-sitter.tar.gz` (the `tarball` composition below)
+#   into ONE `noarch: generic` `.conda`, published to the channel's `noarch/`
+#   subdir. That package IS the cross-repo dependency the editor repos consume
+#   (shipit `docs/dependencies.md`): they pin `tree-sitter = "==<version>"` in
+#   their own pixi.toml against this repo's derived channel and `shipit stage`
+#   copies the files out of the resolved env — no gh-release fetch, no
+#   `deps.json`. Declaring conda here only makes it SELECTABLE at dispatch
+#   (ADR-0070); the live channel seed is coordinator-owned.
 endpoints = ["gh-release", "notify-downstreams", "conda"]
 downstreams = ["lex-fmt/vscode", "lex-fmt/nvim", "lex-fmt/lexed"]
 
+# The release PAYLOAD — the files that make up this repo's package (#103;
+# shipit ADR-0077 / #1092). shipit no longer carries a built-in file list for
+# the `tarball` composition: the producer states its own contents, so shipping
+# one more file is an edit HERE, not a shipit release. The bundle stage tars
+# exactly these entries and nothing else; the conda endpoint then repackages
+# that tarball verbatim under `$PREFIX/share/tree-sitter/`, so this list is
+# also, exactly, what a consumer's `shipit stage` copies out of its env.
+#
+# `leg` names the [toolchains] toolchain the paths are relative to — our
+# tree-sitter leg is the repo ROOT, so every path below is root-relative.
+# Declaration order is tar member order. `required` defaults false: a required
+# entry that is absent is a LOUD bundle failure (the build never ran, or this
+# declaration is wrong), never a quiet archive missing its core.
+#
+# Why each entry rides — the set is the UNION of what the three consumers
+# actually take, verified against both the live 0.11.4 package and the editor
+# repos' (now retired) `deps.json` extract maps:
+#   src/            the C parser sources lex-fmt/nvim compiles locally. BUILD
+#                   OUTPUT (`tree-sitter generate`).
+#   queries/        highlights/injections/folds/textobjects — every consumer.
+#   grammar.js      the grammar source src/ is generated from.
+#   package.json    legacy grammar metadata (scope, file-types, query paths);
+#                   in the live package, so it keeps riding. NOT required — no
+#                   consumer is known to read it, and it is not ours to build.
+#   shared/embedded-grammars.json
+#                   the manifest lex-fmt/vscode and lex-fmt/lexed drive their
+#                   embedded-grammar fetch from. It was NOT in the 0.11.4
+#                   package: the retired `tree-sitter.yml@v3` workflow injected
+#                   it via an app-bin/bundle-extras.sh hook that nothing calls
+#                   any more. Declaring it here is what restores it, and is why
+#                   that hook is deleted. Required because both editors break
+#                   at install time without it and it is a committed file, so
+#                   absent can only mean someone deleted it.
+#   tree-sitter-lex.wasm
+#                   the compiled parser lex-fmt/vscode and lex-fmt/lexed load —
+#                   they cannot compile the C sources the way nvim does, so
+#                   this is the entry the whole migration is gated on. BUILD
+#                   OUTPUT (`tree-sitter build --wasm`, see [toolchains]).
+# `tree-sitter.json` deliberately does NOT ride: no consumer reads it (checked
+# lex-fmt/vscode + lex-fmt/lexed), and it is not in the live package either.
+# `bindings/` and `binding.gyp` never existed in this repo.
+[artifacts.tree-sitter.bundle]
+composition = "tarball"
+leg = "tree-sitter"
+payload = [
+  { path = "src", required = true },
+  { path = "queries", required = true },
+  { path = "grammar.js", required = true },
+  { path = "package.json" },
+  { path = "shared/embedded-grammars.json", required = true },
+  { path = "tree-sitter-lex.wasm", required = true },
+]
+
 [shipit]
-version = "157ebfccb4b97c957e6b2081fd02afb6dd2ff2e4"
+version = "50c1fe15690a0afe5e32ce3b817376b7a0d3d44f"
 
 [managed]
 ".shipit-skills/coordinating/SKILL.md" = "sha256:065a793b117dcfbb1e97fea0a80b405c69995850af9a350061dbcc1f4ea4976a"
