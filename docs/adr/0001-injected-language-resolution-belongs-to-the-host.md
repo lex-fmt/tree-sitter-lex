@@ -10,6 +10,11 @@ repo stops publishing `shared/embedded-grammars.json`, the curated list of third
 grammars editors should bundle. VS Code is the one exception, and there the parser set is
 that repo's private build detail, not a cross-repo contract.
 
+Citation convention below: a bare `path:line` is in **this** repo; a path in another repo
+carries its repo name, as `repo:path:line` (e.g. `zed-lex:app-bin/gen-injections.py`).
+Several sibling repos have an `app-bin/`, a `CHANGELOG/` and a `test/` of their own, so the
+prefix is what tells them apart.
+
 ## Why
 
 The manifest was never a technical requirement. It was introduced by commit `804bf7a`
@@ -29,15 +34,16 @@ different grammars; injection still works for any language the host can resolve.
 
 Two of the four editor integrations already resolve injections host-side, and neither of
 them consumes the manifest. **nvim** never extracts it and registers exactly one language
-(`lua/lex/treesitter.lua:192`); injections resolve against the user's `:TSInstall` parsers
-on runtimepath, and a missing parser is silent by design (Neovim 0.12's
-`languagetree.lua:1015-1018`: a language counts as present only if it is already registered
-or a `parser/<lang>.*` file is found on the runtimepath). **Zed** ships no grammar but
-Lex's own — the extension declares `[grammars.lex]` in `extension.toml` and Zed clones and
-builds it, so the release artifact is never unpacked for parsers to bundle (zed-lex fetches
-`tree-sitter.tar.gz` only as a test-harness fallback for grammar sources,
-`test/helpers.bash:59-61`). `app-bin/gen-injections.py` enumerates 13 language names only
-because Zed lacks `#gsub!` support, and ships none of them.
+(`nvim:lua/lex/treesitter.lua:192`); injections resolve against the user's `:TSInstall`
+parsers on runtimepath, and a missing parser is silent by design (Neovim 0.12's own
+`runtime/lua/vim/treesitter/languagetree.lua:1015-1018`: a language counts as present only
+if it is already registered or a `parser/<lang>.*` file is found on the runtimepath).
+**Zed** ships no grammar but Lex's own — the extension declares `[grammars.lex]` in
+`zed-lex:extension.toml` and Zed clones and builds it, so the release artifact is never
+unpacked for parsers to bundle (`zed-lex:test/helpers.bash:59-61` fetches
+`tree-sitter.tar.gz` only as a test-harness fallback for grammar sources).
+`zed-lex:app-bin/gen-injections.py` enumerates 13 language names only because Zed lacks
+`#gsub!` support, and ships none of them.
 
 This is also what the ecosystem does. tree-sitter-markdown's entire fenced-code story is a
 four-line injections query with no grammar dependencies. Microsoft's own `markdown-basics`
@@ -66,19 +72,20 @@ and line-at-a-time. `Subject:` openers compound this, being ambiguous with defin
 tables on the single line `begin` can see. This is reasoning about the engine's documented
 execution model rather than a statement from VS Code's documentation, but it is corroborated
 in-repo: vscode already failed at the simpler version of the same problem, and scoping
-verbatim bodies for CSpell remains an open known limitation (`CHANGELOG/0.10.9.md:38-45`).
+verbatim bodies for CSpell remains an open known limitation
+(`vscode:CHANGELOG/0.10.9.md:38-45`).
 
 Note the scope of that limitation. It is a TextMate-engine constraint, not a flaw in Lex's
-grammar design — tree-sitter injection is order-independent (Zed's `syntax_map.rs` widens
-each injection step to span both nodes, starting at `cmp::min(content_range.start,
-language_node.start_byte())` and ending at `cmp::max(content_range.end,
-language_node.end_byte())`, precisely so the language node may follow the content; Neovim
-assigns by capture name with no positional constraint).
+grammar design — tree-sitter injection is order-independent (Zed's
+`zed:crates/language/src/syntax_map.rs` widens each injection step to span both nodes,
+starting at `cmp::min(content_range.start, language_node.start_byte())` and ending at
+`cmp::max(content_range.end, language_node.end_byte())`, precisely so the language node may
+follow the content; Neovim assigns by capture name with no positional constraint).
 
 Consequently vscode's parser set is that repo's private build detail, sourced as a normal
 npm dependency — prebuilt tree-sitter wasm is published to npm (`@repomix/tree-sitter-wasms`,
 `@sourcegraph/tree-sitter-wasms`) — not a conda package and not a contract with this repo.
-That is why `deps.json` / `fetch-deps` can die there.
+That is why `vscode:deps.json` and its `fetch-deps` step can die there.
 
 ## The lexed trade-off
 
@@ -88,15 +95,15 @@ Vite cannot tree-shake — so Monaco tokenizers for the five manifest languages 
 the shipped bytes, and the Monarch path is still in place: omitting the optional `tokenizer`
 option is all it takes to reach it, since that option is the only thing that diverts
 `getRegisteredLanguages`/`getSemanticTokensForZone` away from `monaco.editor.tokenize`
-(`packages/monaco-inline-injections/src/monaco/injection_highlighter.ts:106-194`). It was
-the original behaviour until commit `95581f0` ("Render embedded zones via bundled
+(`lexed:packages/monaco-inline-injections/src/monaco/injection_highlighter.ts:106-194`).
+It was the original behaviour until commit `95581f0` ("Render embedded zones via bundled
 tree-sitter grammars") replaced it to bring lexed to parity with vscode, with the note that
 "Languages outside the bundle get no highlighting — the agreed contract — instead of the
 previous Monaco fallback." Net effect: coverage regressed from 82 languages to 5.
 
-That file also carries the objection a future reader will find first
-(`injection_highlighter.ts:47-49`): "The Monaco fallback is fine for prototyping but
-inaccurate compared with tree-sitter". It is true, and we accept it. The owner has
+That same file carries, at lines 47-49, the objection a future reader will find first: "The
+Monaco fallback is fine for prototyping but inaccurate compared with tree-sitter". It is
+true, and we accept it. The owner has
 explicitly accepted tokenizer-fidelity-only for lexed: Monarch fidelity on five languages is
 the price of 82-language coverage at zero maintenance cost. Do not reverse this on the
 strength of that comment alone.
@@ -114,18 +121,18 @@ strength of that comment alone.
   have a native resolution path, so vendoring adds ~3.2 MB and a bump treadmill to replace
   something that already works. It is what vscode ends up doing, but as its own dependency.
 - **For vscode specifically, vendor `vscode-textmate` + `vscode-oniguruma` and run TextMate
-  grammars over verbatim interiors.** Technically real — the repo already does exactly this
-  in `test/unit/spellcheck-scopes.test.ts` — but it trades 3.2 MB of parsers for vendored
-  `.tmLanguage.json` files plus the oniguruma wasm. It does not avoid shipping per-language
-  data, so it does not change the conclusion.
+  grammars over verbatim interiors.** Technically real — that repo already does exactly this
+  in `vscode:test/unit/spellcheck-scopes.test.ts` — but it trades 3.2 MB of parsers for
+  vendored `.tmLanguage.json` files plus the oniguruma wasm. It does not avoid shipping
+  per-language data, so it does not change the conclusion.
 
 ## Consequences
 
 - **Ordering constraint (hard).** `shared/embedded-grammars.json` is `required = true` in
   the release payload (`.shipit.toml:194`) and build-breaking for lexed
-  (`app-bin/check-deps.mjs:123-124`). It must be deleted from this repo **last**, only after
-  lexed reverts to Monaco and vscode relocates its list into its own dependencies. Deleting
-  it first breaks both a release and a consumer build.
+  (`lexed:app-bin/check-deps.mjs:123-124`). It must be deleted from this repo **last**, only
+  after lexed reverts to Monaco and vscode relocates its list into its own dependencies.
+  Deleting it first breaks both a release and a consumer build.
 - **What gets deleted here, in that final step:** `shared/embedded-grammars.json` and its
   payload entry, `app-bin/bump-grammars.sh`, `app-bin/smoke-grammars.sh`,
   `.github/workflows/quarterly-grammar-bump.yml`, and the smoke hook on the test lane
