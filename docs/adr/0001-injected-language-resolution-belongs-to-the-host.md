@@ -130,3 +130,5 @@ strength of that comment alone.
   isn't language X supported?" — the answer becomes "ask your editor".
 - **Scope of lex-fmt/tree-sitter-lex#104 collapses.** This decision supersedes its plan; the
   issue is not closed here, and the downstream editor changes it implies are separate work.
+- **Execution is tracked under epic INJ001**, whose workstreams carry out the ordering
+  constraint above across this repo, lexed and vscode.
