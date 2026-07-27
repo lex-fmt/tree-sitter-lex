@@ -22,24 +22,28 @@ injections themselves.
 
 Nothing in the grammar constrains the injectable set. `queries/injections.scm` lifts
 `@injection.language` from the `annotation_header` text; the only filter is
-`#not-match? "^\s*table"`. The manifest's own `description` field concedes the point: "Lex
-isn't a gatekeeper of formats — this is a packaging convenience, not a contract about which
-languages 'belong'. Editors are free to bundle more, fewer, or different grammars;
-injection still works for any language the host can resolve."
+`(#not-match? @injection.language "^\\s*table")`. The manifest's own `description` field
+concedes the point: "Lex isn't a gatekeeper of formats — this is a packaging convenience,
+not a contract about which languages 'belong'. Editors are free to bundle more, fewer, or
+different grammars; injection still works for any language the host can resolve."
 
-Two of three consumers already behave this way. **nvim** never extracts the manifest and
-registers exactly one language (`lua/lex/treesitter.lua:192`); injections resolve against
-the user's `:TSInstall` parsers on runtimepath, and a missing parser is silent by design
-(Neovim's `languagetree.lua:1015-1018` gates on a `parser/<lang>.*` rtp glob). **Zed** does
-not consume the release artifact at all — it clones and builds the grammar from
-`[grammars.lex]` in `extension.toml`; `app-bin/gen-injections.py` enumerates 13 language
-names only because Zed lacks `#gsub!` support, and ships none of them.
+Two of the four editor integrations already resolve injections host-side, and neither of
+them consumes the manifest. **nvim** never extracts it and registers exactly one language
+(`lua/lex/treesitter.lua:192`); injections resolve against the user's `:TSInstall` parsers
+on runtimepath, and a missing parser is silent by design (Neovim 0.12's
+`languagetree.lua:1015-1018`: a language counts as present only if it is already registered
+or a `parser/<lang>.*` file is found on the runtimepath). **Zed** ships no grammar but
+Lex's own — the extension declares `[grammars.lex]` in `extension.toml` and Zed clones and
+builds it, so the release artifact is never unpacked for parsers to bundle (zed-lex fetches
+`tree-sitter.tar.gz` only as a test-harness fallback for grammar sources,
+`test/helpers.bash:59-61`). `app-bin/gen-injections.py` enumerates 13 language names only
+because Zed lacks `#gsub!` support, and ships none of them.
 
 This is also what the ecosystem does. tree-sitter-markdown's entire fenced-code story is a
 four-line injections query with no grammar dependencies. Microsoft's own `markdown-basics`
 has 62 fenced-block rules, 208 language aliases and 48 `embeddedLanguages` entries and
 ships **zero** grammars — it emits `{"include": "source.python"}` and lets the registry
-resolve it. tree-sitter-asciidoc names ~30 diagram languages in an `#any-of?` predicate and
+resolve it. tree-sitter-asciidoc names 30 diagram languages in an `#any-of?` predicate and
 ships none. No markup grammar in the ecosystem vendors parsers for injected languages, and
 there is no editor-agnostic mechanism to declare such a dependency: `tree-sitter.json`'s
 `injection-regex` runs the opposite direction (the injected grammar advertises the names it
@@ -65,13 +69,15 @@ in-repo: vscode already failed at the simpler version of the same problem, and s
 verbatim bodies for CSpell remains an open known limitation (`CHANGELOG/0.10.9.md:38-45`).
 
 Note the scope of that limitation. It is a TextMate-engine constraint, not a flaw in Lex's
-grammar design — tree-sitter injection is order-independent (Zed's `syntax_map.rs` takes
-min/max over the content and language node ranges precisely so the language node may follow
-the content; Neovim assigns by capture name with no positional constraint).
+grammar design — tree-sitter injection is order-independent (Zed's `syntax_map.rs` widens
+each injection step to span both nodes, starting at `cmp::min(content_range.start,
+language_node.start_byte())` and ending at `cmp::max(content_range.end,
+language_node.end_byte())`, precisely so the language node may follow the content; Neovim
+assigns by capture name with no positional constraint).
 
 Consequently vscode's parser set is that repo's private build detail, sourced as a normal
 npm dependency — prebuilt tree-sitter wasm is published to npm (`@repomix/tree-sitter-wasms`,
-`sourcegraph/tree-sitter-wasms`) — not a conda package and not a contract with this repo.
+`@sourcegraph/tree-sitter-wasms`) — not a conda package and not a contract with this repo.
 That is why `deps.json` / `fetch-deps` can die there.
 
 ## The lexed trade-off
@@ -79,15 +85,18 @@ That is why `deps.json` / `fetch-deps` can die there.
 lexed reverts to its Monaco Monarch code path. It already imports `monaco-editor` 0.55.1 as
 the full ESM bundle — all 82 basic-language contributions, no allowlist, side-effect imports
 Vite cannot tree-shake — so Monaco tokenizers for the five manifest languages are already in
-the shipped bytes, and the Monarch path is complete and tested at
-`packages/monaco-inline-injections/src/monaco/injection_highlighter.ts:104-190`. It was the
-original behaviour until commit `95581f0` replaced it "to bring lexed to parity with
-vscode", with the note that "languages outside the bundle get no highlighting — the agreed
-contract". Net effect: coverage regressed from 82 languages to 5.
+the shipped bytes, and the Monarch path is still in place: omitting the optional `tokenizer`
+option is all it takes to reach it, since that option is the only thing that diverts
+`getRegisteredLanguages`/`getSemanticTokensForZone` away from `monaco.editor.tokenize`
+(`packages/monaco-inline-injections/src/monaco/injection_highlighter.ts:106-194`). It was
+the original behaviour until commit `95581f0` ("Render embedded zones via bundled
+tree-sitter grammars") replaced it to bring lexed to parity with vscode, with the note that
+"Languages outside the bundle get no highlighting — the agreed contract — instead of the
+previous Monaco fallback." Net effect: coverage regressed from 82 languages to 5.
 
 That file also carries the objection a future reader will find first
-(`injection_highlighter.ts:48-49`): "The Monaco fallback is fine for prototyping but
-inaccurate compared with tree-sitter." It is true, and we accept it. The owner has
+(`injection_highlighter.ts:47-49`): "The Monaco fallback is fine for prototyping but
+inaccurate compared with tree-sitter". It is true, and we accept it. The owner has
 explicitly accepted tokenizer-fidelity-only for lexed: Monarch fidelity on five languages is
 the price of 82-language coverage at zero maintenance cost. Do not reverse this on the
 strength of that comment alone.
@@ -102,11 +111,11 @@ strength of that comment alone.
   list that should not exist, and makes this repo the maintainer of five foreign grammars'
   release cadence.
 - **Vendor the wasm into each consumer.** Rejected for nvim/Zed/lexed — all three already
-  have a native resolution path, so vendoring adds ~3.3 MB and a bump treadmill to replace
+  have a native resolution path, so vendoring adds ~3.2 MB and a bump treadmill to replace
   something that already works. It is what vscode ends up doing, but as its own dependency.
 - **For vscode specifically, vendor `vscode-textmate` + `vscode-oniguruma` and run TextMate
   grammars over verbatim interiors.** Technically real — the repo already does exactly this
-  in `test/unit/spellcheck-scopes.test.ts` — but it trades 3.3 MB of parsers for vendored
+  in `test/unit/spellcheck-scopes.test.ts` — but it trades 3.2 MB of parsers for vendored
   `.tmLanguage.json` files plus the oniguruma wasm. It does not avoid shipping per-language
   data, so it does not change the conclusion.
 
@@ -114,7 +123,7 @@ strength of that comment alone.
 
 - **Ordering constraint (hard).** `shared/embedded-grammars.json` is `required = true` in
   the release payload (`.shipit.toml:194`) and build-breaking for lexed
-  (`app-bin/check-deps.mjs:122`). It must be deleted from this repo **last**, only after
+  (`app-bin/check-deps.mjs:123-124`). It must be deleted from this repo **last**, only after
   lexed reverts to Monaco and vscode relocates its list into its own dependencies. Deleting
   it first breaks both a release and a consumer build.
 - **What gets deleted here, in that final step:** `shared/embedded-grammars.json` and its
