@@ -29,6 +29,13 @@ logs = "./bin/shipit logs"
 # it (`bin/check && app-bin/smoke-grammars.sh`) — same coverage, same order.
 # Idempotent and laptop-runnable: `pixi run --locked test-full`.
 test-full = "git submodule update --init --recursive && npm ci && app-bin/test-all && app-bin/smoke-grammars.sh"
+# The grammar BUILD — `tree-sitter generate` + `tree-sitter build --wasm`, the
+# two outputs this repo's release payload declares (src/ and
+# tree-sitter-lex.wasm). This is the SAME entry the release runs: .shipit.toml's
+# [toolchains] build slot is `app-bin/build-grammar.sh`, so `pixi run
+# build-grammar` and `shipit build` execute identical bytes. Laptop-runnable;
+# needs the emscripten wasm backend below, so it does not run on linux-aarch64.
+build-grammar = "app-bin/build-grammar.sh"
 
 [feature.lint.dependencies]
 # >>> shipit-managed lint deps (do not edit; regenerate via `shipit install`) >>>
@@ -145,6 +152,43 @@ uv = ">=0.5"
 # jq backs app-bin/smoke-grammars.sh (part of the test lane), so the lane is
 # self-contained rather than leaning on the runner image's system jq.
 jq = "1.*"
+
+# The WASM BACKEND for this repo's build step (#103).
+#
+# `tree-sitter-lex.wasm` is a REQUIRED entry of this repo's declared release
+# payload (.shipit.toml [artifacts.tree-sitter.bundle]), and under the
+# conda-direct model (shipit ADR-0077 / #1092) the payload is collected, never
+# produced, by the bundle stage: shipit tars exactly the declared files and
+# fails loudly when a required one is absent. So the wasm is OUR build output —
+# `app-bin/build-grammar.sh`, the [toolchains] build slot — and its compiler
+# must ride this env, not the runner image (the #582 doctrine: the release run
+# never installs at run time), same reasoning as tree-sitter-cli/rattler-build
+# above.
+#
+# PINNED to 3.1.58, NOT the newer 4.0.9: conda-forge's emscripten 4.0.9 is
+# internally inconsistent — it declares `binaryen >=117,<118` while its own emcc
+# expects binaryen 123 and passes `--no-stack-ir`, an option binaryen 117 does
+# not have, so every wasm build dies in wasm-opt:
+#   Unknown option '--no-stack-ir'
+#   emcc: error: '.../wasm-opt ... --no-stack-ir output.wasm ...' failed
+# conda-forge tops out at binaryen 121, so no pin of the standalone package
+# repairs 4.0.9. 3.1.58 matches its own `binaryen >=117,<118` and builds a real
+# WebAssembly module. Revisit when conda-forge ships a self-consistent 4.x.
+#
+# TARGET-SCOPED because emscripten has no linux-aarch64 build on conda-forge,
+# and this workspace declares that platform: a default-env [dependencies] entry
+# would make `pixi lock` unsatisfiable there. The release matrix builds on
+# linux-64 and a laptop cut on osx-*; linux-aarch64 keeps a lockable env and
+# simply has no wasm backend, where a build attempt fails loudly (the intended
+# posture) rather than silently producing a wasm-less payload.
+[target.linux-64.dependencies]
+emscripten = "==3.1.58"
+
+[target.osx-arm64.dependencies]
+emscripten = "==3.1.58"
+
+[target.osx-64.dependencies]
+emscripten = "==3.1.58"
 
 # >>> shipit-managed lexd feature (do not edit; regenerate via `shipit install`) >>>
 [feature.shipit-lexd]
