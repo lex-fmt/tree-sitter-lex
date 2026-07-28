@@ -26,6 +26,7 @@
   are unchanged.
 - docs: `README.md`'s `tree-sitter.tar.gz` description now matches the declared
   payload (it listed neither `grammar.js` nor `package.json`), and states
-  explicitly that the tarball ships no third-party grammars. Its Development
-  block pointed at `bin/check`, which has not existed since the shipit cutover —
-  now `app-bin/test-all`.
+  explicitly that the tarball ships no third-party grammars. Its Development and
+  Parity testing blocks pointed at `bin/check`, which has not existed since the
+  shipit cutover — now `app-bin/test-all`, as does that script's own usage
+  header.

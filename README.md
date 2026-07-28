@@ -74,13 +74,14 @@ grained invocations (single bats files, filter patterns, etc.).
 ### Parity testing
 
 The parity check compares tree-sitter's CST with lex-core's AST to verify
-structural agreement. It requires the `lexd` CLI binary, which `bin/check`
-downloads automatically (pinned version from `shared/lex-deps.json`). To
-pre-fetch it manually, or to use an existing `lexd` binary:
+structural agreement. It requires the `lexd` CLI binary, which
+`app-bin/test-all` downloads automatically (pinned version from
+`shared/lex-deps.json`). To pre-fetch it manually, or to use an existing `lexd`
+binary:
 
 ```sh
-fetch-deps --if-missing lexd-cli      # download pinned lexd into ./deps/lexd
-LEX_CLI_PATH=/path/to/lexd bin/check  # or point at an existing lexd
+fetch-deps --if-missing lexd-cli           # download pinned lexd into ./deps/lexd
+LEX_CLI_PATH=/path/to/lexd app-bin/test-all  # or point at an existing lexd
 ```
 
 ### Architecture: two parsers, different jobs
