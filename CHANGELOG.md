@@ -4,6 +4,8 @@
 
 ## Unreleased
 
+## 0.12.0 - 2026-07-28
+
 - release: the grammar package now ships **`tree-sitter-lex.wasm`** again, plus
   `shared/embedded-grammars.json`. `lex-fmt/vscode` and `lex-fmt/lexed` load the
   compiled parser — they cannot compile the C sources the way `lex-fmt/nvim`
