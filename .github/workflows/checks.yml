@@ -9,8 +9,8 @@ name: Checks
 # implementation a laptop runs. The block is consumed by the floating major
 # ref @v1, per the ADR-0010 publishing convention.
 #
-# Release workflows (release.yml, on-upstream-released.yml) and the quarterly
-# grammar bump stay on the legacy path — out of scope for this cutover.
+# Release workflows (release.yml, on-upstream-released.yml) stay on the legacy
+# path — out of scope for this cutover.
 
 on:
   push:

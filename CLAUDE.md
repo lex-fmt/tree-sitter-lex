@@ -20,7 +20,6 @@ app-bin/
   test-all          Single entry point — runs all repo checks (CI runs it via the test-full lane)
   parity-print.js   Converts tree-sitter XML to parity format
   parity-ignored.txt  Acknowledged parity divergences (bats skip)
-  bump-grammars.sh  Quarterly grammar dependency bump
 deps/               Downloaded runtime/test deps (lexd binary; gitignored)
 test/
   corpus/           Tree-sitter corpus tests
@@ -37,7 +36,7 @@ shared/
 ```sh
 npm install                  # install tree-sitter CLI (one time)
 pixi run --locked lint-full                           # the CI lint lane (managed lint gate)
-pixi run --locked test-full                           # the CI test lane (self-provisions, then test-all + smoke)
+pixi run --locked test-full                           # the CI test lane (self-provisions, then test-all)
 app-bin/test-all                                      # run ALL repo checks
 app-bin/test-all --quick                              # skip parity (for rapid iteration)
 npx tree-sitter test                                  # just corpus tests

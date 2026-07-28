@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# check: single entry point for all tree-sitter-lex quality checks.
+# test-all: single entry point for all tree-sitter-lex quality checks.
 #
 # Runs the same checks in every context: CI and manual.
 #
 # Usage:
-#   bin/check                # run all checks
-#   bin/check --quick        # skip parity
+#   app-bin/test-all                # run all checks
+#   app-bin/test-all --quick        # skip parity
 #
 # Run subsets directly via bats:
 #   npx bats test/generated/no-errors.bats              # just error checks
@@ -31,7 +31,7 @@ for arg in "$@"; do
 done
 
 cd "$REPO_DIR"
-command -v npx >/dev/null 2>&1 || die "bin/check: npx not found on \$PATH (tree-sitter CLI is npm-based)"
+command -v npx >/dev/null 2>&1 || die "app-bin/test-all: npx not found on \$PATH (tree-sitter CLI is npm-based)"
 FAILED=false
 
 # --- 1. Generate parser ---
