@@ -82,10 +82,27 @@ starting at `cmp::min(content_range.start, language_node.start_byte())` and endi
 `cmp::max(content_range.end, language_node.end_byte())`, precisely so the language node may
 follow the content; Neovim assigns by capture name with no positional constraint).
 
-Consequently vscode's parser set is that repo's private build detail, sourced as a normal
-npm dependency — prebuilt tree-sitter wasm is published to npm (`@repomix/tree-sitter-wasms`,
-`@sourcegraph/tree-sitter-wasms`) — not a conda package and not a contract with this repo.
-That is why `vscode:deps.json` and its `fetch-deps` step can die there.
+Consequently vscode's parser set is that repo's private build detail, sourced as normal npm
+dependencies — not a conda package and not a contract with this repo. That is why
+`vscode:deps.json` and its `fetch-deps` step can die there.
+
+The packages are the tree-sitter org's **official per-language** ones —
+`tree-sitter-python`, `tree-sitter-javascript`, `tree-sitter-json`, `tree-sitter-rust`,
+`tree-sitter-bash` — which is what `vscode:` shipped in lex-fmt/vscode#166. Each carries
+`tree-sitter-<lang>.wasm`, `queries/highlights.scm` **and** its `LICENSE`, so nothing is
+vendored and attribution rides the package. They are the same upstream repos the retired
+manifest fetched release assets from, so the trust boundary is unchanged — only delivery
+moved to npm.
+
+**Not** the aggregate prebuilt-wasm bundles. This ADR originally named
+`@repomix/tree-sitter-wasms` and `@sourcegraph/tree-sitter-wasms`; both are unusable, and so
+is the third obvious candidate. Tested against the `web-tree-sitter@0.26.8` that vscode pins
+— downloaded and `Language.load`-ed, not read off a README — the two aggregate bundles each
+throw in `getDylinkMetadata`: they are built with tree-sitter-cli 0.20/0.21, and the 0.26
+loader rejects their emscripten dylink metadata outright. That is a load-time failure, not a
+merely-outdated grammar, and no version pin fixes it. Coverage rules them out independently
+anyway: `@repomix/tree-sitter-wasms` lacks `bash` and `json`, and `@vscode/tree-sitter-wasm`
+lacks `json`.
 
 ## The lexed trade-off
 
@@ -128,15 +145,15 @@ strength of that comment alone.
 
 ## Consequences
 
-- **Ordering constraint (hard).** `shared/embedded-grammars.json` is `required = true` in
-  the release payload (`.shipit.toml:194`) and build-breaking for lexed
-  (`lexed:app-bin/check-deps.mjs:123-124`). It must be deleted from this repo **last**, only
-  after lexed reverts to Monaco and vscode relocates its list into its own dependencies.
-  Deleting it first breaks both a release and a consumer build.
-- **What gets deleted here, in that final step:** `shared/embedded-grammars.json` and its
-  payload entry, `app-bin/bump-grammars.sh`, `app-bin/smoke-grammars.sh`,
-  `.github/workflows/quarterly-grammar-bump.yml`, and the smoke hook on the test lane
-  (`pixi.toml:31`).
+- **Ordering constraint (hard).** `shared/embedded-grammars.json` was `required = true` in
+  the release payload (`.shipit.toml`, `[artifacts.tree-sitter.bundle]`) and build-breaking
+  for lexed (`lexed:app-bin/check-deps.mjs`). It had to be deleted from this repo **last**,
+  only after lexed reverted to Monaco and vscode relocated its list into its own
+  dependencies. Deleting it first would have broken both a release and a consumer build.
+- **What got deleted here, in that final step (INJ001-WS03):**
+  `shared/embedded-grammars.json` and its payload entry, `app-bin/bump-grammars.sh`,
+  `app-bin/smoke-grammars.sh`, `.github/workflows/quarterly-grammar-bump.yml`, and the
+  smoke hook on the `test-full` task in `pixi.toml`.
 - **`queries/injections.scm` is unchanged.** It is already correct and open-ended; this
   decision removes packaging, not behaviour.
 - **Coverage changes per host:** lexed 5 → 82 languages (lower fidelity); nvim and Zed
@@ -144,7 +161,9 @@ strength of that comment alone.
 - **This repo stops tracking upstream grammar releases.** No quarterly bump, no smoke check
   against `tree-sitter/tree-sitter-<lang>` GitHub assets, and no obligation to answer "why
   isn't language X supported?" — the answer becomes "ask your editor".
-- **Scope of lex-fmt/tree-sitter-lex#104 collapses.** This decision supersedes its plan; the
-  issue is not closed here, and the downstream editor changes it implies are separate work.
+- **Scope of lex-fmt/tree-sitter-lex#104 collapses.** This decision supersedes its plan —
+  its premise, that the five grammars must be packaged somewhere, is what the decision
+  rejects — and the issue was closed under INJ001. The downstream editor changes it implied
+  are separate work.
 - **Execution is tracked under epic INJ001**, whose workstreams carry out the ordering
   constraint above across this repo, lexed and vscode.

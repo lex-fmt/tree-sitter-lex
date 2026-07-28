@@ -25,10 +25,8 @@ logs = "./bin/shipit logs"
 # run the umbrella. test-all provisions its OWN lexd at the shared/lex-deps.json
 # pin (v0.14.1 — the version the parity contract is written against;
 # `shipit provision lexd` would install latest and is deliberately NOT used
-# here). smoke-grammars.sh rides along because the legacy check-command chained
-# it (`bin/check && app-bin/smoke-grammars.sh`) — same coverage, same order.
-# Idempotent and laptop-runnable: `pixi run --locked test-full`.
-test-full = "git submodule update --init --recursive && npm ci && app-bin/test-all && app-bin/smoke-grammars.sh"
+# here). Idempotent and laptop-runnable: `pixi run --locked test-full`.
+test-full = "git submodule update --init --recursive && npm ci && app-bin/test-all"
 # The grammar BUILD — `tree-sitter generate` + `tree-sitter build --wasm`, the
 # two outputs this repo's release payload declares (src/ and
 # tree-sitter-lex.wasm). This is the SAME entry the release runs: .shipit.toml's
@@ -149,9 +147,6 @@ pnpm = "11.*"
 # provisions uv for a consumer (known gap: shipit#758) — so the launcher's one
 # prerequisite must ride the env. Same consumer unblock as lex#829.
 uv = ">=0.5"
-# jq backs app-bin/smoke-grammars.sh (part of the test lane), so the lane is
-# self-contained rather than leaning on the runner image's system jq.
-jq = "1.*"
 
 # The WASM BACKEND for this repo's build step (#103).
 #

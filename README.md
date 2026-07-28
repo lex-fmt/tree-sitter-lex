@@ -46,19 +46,28 @@ pre-built WASM module from this repo's release artifacts. No manual setup needed
 
 The release artifact `tree-sitter.tar.gz` contains everything needed:
 
-- `src/parser.c`, `src/scanner.c` — C sources (compile locally)
+- `src/` — the generated C parser sources (`parser.c`, `scanner.c`,
+  `grammar.json`, `node-types.json`, `tree_sitter/`) to compile locally
+- `queries/` — highlight, injection, fold, and textobject queries
+- `grammar.js` — the grammar source `src/` is generated from
+- `package.json` — grammar metadata (scope, file types, query paths)
 - `tree-sitter-lex.wasm` — pre-built WASM module
-- `queries/*.scm` — highlight, injection, and textobject queries
+
+That is the whole payload: the Lex grammar and its queries, nothing else. It
+ships **no** third-party grammars for the languages injected into verbatim
+blocks — resolving `:: python ::` to a Python parser is the host editor's job,
+through its own parser index. See
+[ADR-0001](docs/adr/0001-injected-language-resolution-belongs-to-the-host.md).
 
 ## Development
 
 ```sh
 npm install                  # install tree-sitter CLI (one time)
-bin/check                    # umbrella check script (CI adds smoke-grammars on top)
-bin/check --quick            # skip parity (for rapid iteration)
+app-bin/test-all             # umbrella check script (the same entry CI's test lane runs)
+app-bin/test-all --quick     # skip parity (for rapid iteration)
 ```
 
-`bin/check` regenerates the parser, runs the corpus tests, runs the
+`app-bin/test-all` regenerates the parser, runs the corpus tests, runs the
 generated bats `no-errors` suite, and runs parity. See `CLAUDE.md` for finer-
 grained invocations (single bats files, filter patterns, etc.).
 

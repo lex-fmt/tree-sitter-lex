@@ -54,10 +54,9 @@ ignore = [
 #     [feature.lint.tasks].
 #   - `test-full` inits the `comms` submodule (the bats generator's spec
 #     fixtures) and `npm ci`s the tree-sitter CLI + bats inline before running
-#     the app-bin/test-all umbrella + smoke-grammars — the wf-checks checkout
-#     has no submodule support and a hosted runner has no node_modules; uv
-#     (for bin/shipit) and jq (for smoke-grammars) ride pixi's default env
-#     ([dependencies] in pixi.toml).
+#     the app-bin/test-all umbrella — the wf-checks checkout has no submodule
+#     support and a hosted runner has no node_modules; uv (for bin/shipit)
+#     rides pixi's default env ([dependencies] in pixi.toml).
 [lanes.lint]
 run = "lint-full"
 required = true
@@ -166,15 +165,6 @@ downstreams = ["lex-fmt/vscode", "lex-fmt/nvim", "lex-fmt/lexed"]
 #   package.json    legacy grammar metadata (scope, file-types, query paths);
 #                   in the live package, so it keeps riding. NOT required — no
 #                   consumer is known to read it, and it is not ours to build.
-#   shared/embedded-grammars.json
-#                   the manifest lex-fmt/vscode and lex-fmt/lexed drive their
-#                   embedded-grammar fetch from. It was NOT in the 0.11.4
-#                   package: the retired `tree-sitter.yml@v3` workflow injected
-#                   it via an app-bin/bundle-extras.sh hook that nothing calls
-#                   any more. Declaring it here is what restores it, and is why
-#                   that hook is deleted. Required because both editors break
-#                   at install time without it and it is a committed file, so
-#                   absent can only mean someone deleted it.
 #   tree-sitter-lex.wasm
 #                   the compiled parser lex-fmt/vscode and lex-fmt/lexed load —
 #                   they cannot compile the C sources the way nvim does, so
@@ -191,7 +181,6 @@ payload = [
   { path = "queries", required = true },
   { path = "grammar.js", required = true },
   { path = "package.json" },
-  { path = "shared/embedded-grammars.json", required = true },
   { path = "tree-sitter-lex.wasm", required = true },
 ]
 
