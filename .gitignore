@@ -1,14 +1,6 @@
 node_modules/
 # Downloaded runtime/test deps (lexd binary) live here, not in bin/.
 /deps/
-# Allow bin/<verb> thin callers (per arthur-debert/release).
-/bin/*
-!/bin/check
-!/bin/build
-!/bin/changelog
-!/bin/changelog-add
-!/bin/changelog-cut
-!/bin/changelog-render
 *.wasm
 # package-lock.json is deliberately NOT ignored: it is COMMITTED so node-deps
 # installs are deterministic — CI's tree-sitter-ci.yml switches from `npm install`
