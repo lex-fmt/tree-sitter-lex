@@ -4,6 +4,49 @@
 
 ## Unreleased
 
+- release: the grammar package now ships **`tree-sitter-lex.wasm`** again, plus
+  `shared/embedded-grammars.json`. `lex-fmt/vscode` and `lex-fmt/lexed` load the
+  compiled parser — they cannot compile the C sources the way `lex-fmt/nvim`
+  does — so those two entries are what let the editors consume this repo as one
+  resolvable conda package. The wasm build was supplied by the retired
+  `arthur-debert/release` `tree-sitter.yml@v3` workflow and was dropped by the
+  shipit cutover; `app-bin/build-grammar.sh` is now this repo's build step and
+  pixi provisions its emscripten backend (`3.1.58`, target-scoped to
+  linux-64/osx-64/osx-arm64 — conda-forge has no linux-aarch64 build, and its
+  4.0.9 is internally inconsistent: `binaryen >=117,<118` against an emcc that
+  requires 123).
+- release: the package's contents are now **declared** in `.shipit.toml`
+  (`[artifacts.tree-sitter.bundle]` `leg` + `payload`) rather than coming from a
+  built-in list inside shipit (conda-direct, shipit ADR-0077 / #1092). Shipping
+  one more file is an edit to that list. Reconciled to shipit v1.6.0, the first
+  release carrying the producer-declared payload.
+- ci: a `build` lane runs `pixi run build-grammar` on every PR, so a broken wasm
+  build fails on the PR instead of on a release tag.
+- chore: `app-bin/bundle-extras.sh` deleted — the hook for the retired
+  `tree-sitter.yml@v3` workflow that nothing had called since the shipit
+  cutover. Its two jobs are both covered: the payload declaration ships
+  `shared/embedded-grammars.json`, and the test lane already runs the
+  `app-bin/smoke-grammars.sh` release gate.
+- chore: regenerated `src/parser.c` so its embedded grammar metadata matches
+  `tree-sitter.json` (it read `0.6.0` against a declared `0.10.3`, so every
+  `tree-sitter generate` dirtied the tree).
+- chore: the root `UNRELEASED.md` deleted — release notes live in
+  `CHANGELOG/unreleased-<slug>.md` fragments, which is what shipit's release
+  `prepare` coalesces (zero fragments is a refused, empty release). That file
+  was residue of the retired `arthur-debert/release` tooling: its own header
+  named `scripts/create-release` as its consumer, and no such script has existed
+  here since the shipit cutover. Nothing read it, but it read as authoritative,
+  which is how every note above ended up in it instead of in a fragment, leaving
+  this cut with nothing to coalesce.
+- chore: the `.gitignore` `/bin/*` block dropped — the last of the same
+  residue. It ignored all of `bin/` and then un-ignored six thin callers
+  (`check`, `build`, `changelog`, `changelog-add`, `changelog-cut`,
+  `changelog-render`) that the retired tooling supplied and that have not
+  existed here for releases; what `bin/` actually holds now (`shipit`,
+  `setup-dev-env.sh`, `pr-loop-guard`) was tracked in spite of it. Live cost,
+  not just clutter: any NEW file under `bin/` — including one a `shipit install`
+  reconcile writes — was silently ignored.
+
 ## 0.11.4 - 2026-07-19
 
 - release: the `tree-sitter` grammar now ships to the Artifact channel as a
