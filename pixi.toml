@@ -11,7 +11,6 @@ test = "./bin/shipit test"
 # <<< shipit-managed test task <<<
 # >>> shipit-managed tasks (do not edit; regenerate via `shipit install`) >>>
 changelog = "./bin/shipit changelog"
-lint = "./bin/shipit lint"
 logs = "./bin/shipit logs"
 # <<< shipit-managed tasks <<<
 # The wf-checks TEST LANE's run (ADP02-WS03, #87) — NOT the managed bare `test`
@@ -60,6 +59,9 @@ lefthook = "2.1.*"
 # <<< shipit-managed lint deps <<<
 
 [feature.lint.tasks]
+# >>> shipit-managed lint task (do not edit; regenerate via `shipit install`) >>>
+lint = "./bin/shipit lint"
+# <<< shipit-managed lint task <<<
 # The wf-checks LINT LANE's run (ADP02-WS03, #87), byte-modeled on shipit's own
 # and lex#829's: the lint toolchain (ruff/shfmt/prettier/markdownlint/
 # actionlint/...) lives in THIS feature's env, so the lane task must resolve
@@ -78,6 +80,23 @@ lint = ["lint", "shipit-lexd"]
 # <<< shipit-managed environments <<<
 
 [dependencies]
+# >>> shipit-managed launcher deps (do not edit; regenerate via `shipit install`) >>>
+# The pinned `bin/shipit` launcher's one prerequisite (#758, TOL02-WS17
+# #794): every workflow block (wf-checks and the whole wf-release family)
+# runs `pixi run --locked ./bin/shipit ...`, and the ADR-0033 launcher
+# resolves the repo's shipit pin via `uv tool run` — but hosted runners do
+# not carry uv, so without this block the very first `./bin/shipit` dies 127
+# before any verb runs. Provisioned from conda-forge under setup-pixi's
+# lockfile-keyed cache (the #582 doctrine; the spike measured the launcher's
+# uv resolve at 5s cold / 0-3s warm riding this env — no extra cache step).
+# Anchored under [dependencies] — the DEFAULT env — because that is exactly
+# the PATH a bare `pixi run --locked <task>` resolves. Pinned to the minor
+# line of Layer 0's UV_PIN (bin/setup-dev-env.sh), so dev machines and CI
+# provision the same uv; a lockstep drift test (tests/test_install.py) fails
+# when the two move apart. `uv build` (the python bundle composition) rides
+# this same entry.
+uv = "0.11.*"
+# <<< shipit-managed launcher deps <<<
 # >>> shipit-managed conda packager (do not edit; regenerate via `shipit install`) >>>
 # The conda ENDPOINT's packager (ARF01-WS01 #950, ADR-0064/0070; re-gated
 # #1071). `shipit release publish`'s conda endpoint runs `rattler-build build`
@@ -137,16 +156,17 @@ tree-sitter-cli = "0.25.*"
 nodejs = "26.*"
 pnpm = "11.*"
 # <<< shipit-managed node deps <<<
-# Consumer-owned dependencies (outside the shipit-managed block above),
+# Consumer-owned dependencies (outside the shipit-managed blocks above),
 # added for the wf-checks lanes (ADP02-WS03, #87): both lanes run
 # `pixi run --locked <task>` on a hosted runner where nothing outside pixi
 # is provisioned.
-# uv backs the pinned bin/shipit launcher (ADR-0033: it provisions the repo's
-# pinned shipit via uv, PATH-independent). The wf-checks plan job and the lint
-# lane both run ./bin/shipit, and neither the block nor the managed set
-# provisions uv for a consumer (known gap: shipit#758) — so the launcher's one
-# prerequisite must ride the env. Same consumer unblock as lex#829.
-uv = ">=0.5"
+#
+# `uv` is NOT declared here any more: it backs the pinned bin/shipit launcher
+# (ADR-0033 — the launcher provisions the repo's pinned shipit via uv,
+# PATH-independent) and shipit's managed `shipit-launcher-deps` block owns it
+# on the fleet pin (shipit#758 closed that gap). A consumer entry for the same
+# key makes the managed block skip delivery, so the repo would silently stay
+# off the pin.
 
 # The WASM BACKEND for this repo's build step (#103).
 #
